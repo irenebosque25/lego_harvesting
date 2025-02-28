@@ -1,0 +1,113 @@
+---
+title: "DATA HARVESTING PROJECT"
+format: html
+editor: visual
+---
+
+## APUNTES
+
+To check the childrens of a node. Esto busca el primer child
+
+```{r}
+# xml_child returns only one child (specified in search)
+# Here, jason is the first child
+xml_child(xml_raw, search = 1)
+```
+
+Y esto el segundo:
+
+```{r}
+# Here, carol is the second child
+xml_child(xml_raw, search = 2)
+```
+
+Using the `xml_attrs` function we can extract all attributes that match a specific name:
+
+```{r}
+person_nodes <- xml_children(child_xml)
+```
+
+```{r}
+# Extract the attribute type from all nodes
+xml_attrs(person_nodes, "type")
+```
+
+Aquí te encontraria el nod person ya que es el unico que tiene el atributo *type:*
+
+```         
+## <people> ##   <jason> ##     <person [type]> ##       <first_name> ##         <married> ##           {text} ##       <last_name> ##         {text} ##       <occupation> ##         {text} ##   <carol> ##     <person [type]> ##       <first_name> ##         <married> ##           {text} ##       <last_name> ##         {text} ##       <occupation> ##         {text}
+```
+
+Using the `xml_path` function you can even find the ‘address’ of these nodes to retrieve specific tags without having to write down `xml_children` many times. For example:
+
+```{r}
+xml_path(person_nodes)
+
+# You can use results from xml_path like directories
+xml_find_all(xml_raw, "/people/jason/person")
+```
+
+`//` is very handy, it means: search the entire document and bring me back all `<dansimmons>` tags:
+
+```{r}
+book_xml %>%
+  xml_find_all("//dansimmons")
+```
+
+What would an XPath expression look like to subset only the 2nd `<book>` tag of `dansimmons`? We can tell XPath the position of the tag we want using `[number]`, where number is replaced with the position:
+
+```{r}
+book_xml %>%
+  xml_find_all("//dansimmons/book[2]")
+```
+
+Path introduces the `*` as a wildcard pattern to return all children of current parent tag.:
+
+```{r}
+book_xml %>%
+  xml_find_all("//dansimmons/*")
+```
+
+Similarly, `*` can be used to fill out a tag which you don’t know the name of. You know that each author has `<book>` tags but you don’t know the name of all authors. You could extract all book tags like this:
+
+```{r}
+book_xml %>%
+  xml_find_all("/*/*/*/book")
+```
+
+Whenever we want our tags to match a specific attribute we can add two brackets at the end of the tag and match the attribute to what we’re after.
+
+```{r}
+book_xml %>%
+  xml_find_all("//dansimmons//book[@price='yes']") %>%
+  xml_text()
+```
+
+XPath has all the goodies to perform basic filtering (`and`, `or`, `=`, `!=`) but also has additional functions that are useful for filtering. Some of the most common ones include:
+
+-   [`contains()`](https://tidyselect.r-lib.org/reference/starts_with.html)
+
+-   `starts-with()`
+
+-   [`text()`](https://rdrr.io/r/graphics/text.html)
+
+-   [`not()`](https://magrittr.tidyverse.org/reference/aliases.html)
+
+-   [`count()`](https://dplyr.tidyverse.org/reference/count.html)
+
+```{r}
+library(rvest)
+library(xml2)
+library(httr)
+
+url <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
+
+url |> 
+  read_html() |> 
+  xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")#|> xml_parent() |> xml_parent() |> xml_parent() |> 
+  #html_table() |> 
+  
+
+
+
+```
