@@ -6,6 +6,8 @@ editor: visual
 
 ## APUNTES
 
+Let's try
+
 To check the childrens of a node. Esto busca el primer child
 
 ```{r}
