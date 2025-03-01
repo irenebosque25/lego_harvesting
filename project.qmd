@@ -29,24 +29,20 @@ To obtain and analyze this data, we will implement web scraping techniques using
 
 Through this research, we aim to uncover patterns that help identify which themes are the most profitable over time, providing valuable insights for both collectors and investors in this emerging market.
 
+### Libraries
+
 ```{r}
 library(rvest)
 library(xml2)
 library(httr)
-
-url <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
-
-url <- url |> 
-  read_html()
-
-url |> 
-  xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")|> xml_parent() |> xml_parent() |> xml_parent() |> 
-  html_table()
+library(stringr)
+library(tidyverse)
 
 ```
 
+## Official LEGO website
+
 ```{r}
-library(stringr)
 
 disney <- "https://www.lego.com/es-es/themes/disney"
 
@@ -83,27 +79,290 @@ pieces
 ```
 
 ```{r}
-lego <- read_html(url)
+# Function for LEGO Disney data
+extract_lego_data <- function(base_url, max_pages = 4) {
+  # Vectors to store the results
+  all_prices <- c()
+  all_titles <- c()
+  all_pieces <- c()
+  
+  for (page_num in 1:max_pages) {
+    page_url <- paste0(base_url, "?page=", page_num, "&offset=0")
+    
+    page <- read_html(page_url)
+    
+    prices <- page |> # prices
+      xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
+      html_text() 
+    
+    prices <- gsub(",", ".", prices)
+    prices <- str_replace(prices, "\\s?€$", "") |> 
+      as.numeric()
+    
+    titles <- page |> # titles
+      xml_find_all(
+        "//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
+      xml_children() |> 
+      html_text()
+    
+    pieces <- page |> # pieces
+      xml_find_all("//span[@data-test='product-leaf-piece-count-label']") |>
+      html_text() |> 
+      as.numeric()
+    
+    # Filter titles that contain "llavero" and their data associated
+    filter_llavero <- str_detect(titles, regex("llavero", ignore_case = TRUE))
+    
+    titles <- titles[!filter_llavero]
+    prices <- prices[!filter_llavero]
+    pieces <- pieces[!filter_llavero]
+    
+    # Store the results
+    all_prices <- c(all_prices, prices)
+    all_titles <- c(all_titles, titles)
+    all_pieces <- c(all_pieces, pieces)
+    
+    # Rest for two seconds
+    Sys.sleep(2)
+  }
+  
+  # Data frame with the results
+  lego_data <- data.frame(
+    Title = all_titles,
+    Price = all_prices,
+    PieceCount = all_pieces)
+  
+  return(lego_data)
+}
+```
+
+### Categories wanted
+
+```{r}
+# Disney
+url_disney <- "https://www.lego.com/es-es/themes/disney"
+lego_disney <- extract_lego_data(url_disney, max_pages = 4) |> 
+  mutate("Franchise"= "Disney")
+```
+
+```{r}
+#Harry Potter
+url_harryp <- "https://www.lego.com/es-es/themes/harry-potter"
+lego_harryp <- extract_lego_data(url_harryp, max_pages = 4)|> 
+  mutate("Franchise"= "Harry Potter")
+```
+
+```{r}
+#Star Wars
+url_starwars <- "https://www.lego.com/es-es/themes/star-wars"
+lego_starwars <- extract_lego_data(url_starwars, max_pages = 6)|> 
+  mutate("Franchise"= "Star Wars")
+```
+
+```{r}
+#Super Mario
+url_supermario <- "https://www.lego.com/es-es/themes/super-mario"
+lego_supermario <- extract_lego_data(url_supermario, max_pages = 2)|> 
+  mutate("Franchise"= "Super Mario")
+```
+
+```{r}
+#Lord of the Rings
+url_rings<- "https://www.lego.com/es-es/themes/lord-of-the-rings"
+lego_lotr <- extract_lego_data(url_rings, max_pages = 2)|> 
+  mutate("Franchise"= "Lord of the Rings")
+```
+
+```{r}
+#Marvel
+url_marvel <- "https://www.lego.com/es-es/themes/marvel"
+lego_marvel <- extract_lego_data(url_marvel, max_pages = 4)|> 
+  mutate("Franchise"= "Marvel")
+```
+
+```{r}
+#City
+url_city <-"https://www.lego.com/es-es/themes/city"
+lego_city <- extract_lego_data(url_city, max_pages = 5)|> 
+  mutate("Franchise"= "City")
+```
+
+```{r}
+#Jurassic Park
+url_jurassic <- "https://www.lego.com/es-es/themes/jurassic-world"
+lego_jurassic <- extract_lego_data(url_jurassic, max_pages = 1) |> 
+  mutate("Franchise"= "Jurassic World")
+```
+
+```{r}
+official_lego <- bind_rows(
+  lego_disney, lego_city, lego_harryp, 
+  lego_jurassic, lego_lotr, lego_marvel, 
+  lego_starwars, lego_supermario)
+
+official_lego <- official_lego |> #The Nas are not lego sets
+  drop_na (PieceCount)
+```
+
+## Bricklink
+
+```{r}
+
+brick <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
+brick <- read_html(brick)
 
 # All the links inside the main page
-links <- lego |>
+links <- brick |>
   html_nodes("a") |> 
   html_attr("href")
 
-# Links of the main sections
-section_links <- 
+# Links of the main categories
+cat_links <- 
   links[grepl("catalogList.asp\\?catType=S&catString=[0-9]+$", links)]
 
-# Names of the main sections
-section_names <- lego |> 
+# Names of the main categories
+cat_names <- brick |> 
   html_nodes("a b") |> 
   html_text()
 
-section_links <- paste0("https://www.bricklink.com", section_links)
+cat_links <- paste0("https://www.bricklink.com", cat_links)
 
 # Data.frame with all the info
-main_sections <- data.frame(
-  section_name = section_names,
-  section_url = section_links)
+main_categories <- data.frame(
+  category_name = cat_names,
+  category_url = cat_links)
+```
+
+
+```{r}
+# # Function to extract the number of pages that contain products for each category
+# total_pages <- function(url) {
+#   link <- read_html(url)
+#   
+#   page_numbers <- link |> 
+#     html_nodes(xpath = "//div[@class='pagination']//a") |> 
+#     html_text() |> 
+#     as.numeric()
+#   
+#   if (length(page_numbers) == 0) {
+#     return(1)
+#   } else {
+#     return(max(page_numbers, na.rm = TRUE))
+#   }
+# }
+# 
+# main_categories <- main_categories |> 
+#   mutate(products_pages = sapply(category_url, total_pages))
+```
+
+### First try with Star Wars
+
+```{r}
+sw_link <- main_categories |> 
+  filter(category_name == "Star Wars") |> 
+  select(category_url) |> 
+  as.character() 
+
+sw <- sw_link |> 
+  read_html()
+
+raw_sw <- sw |> 
+  xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
+  html_attr("href")
+
+# Only the ones for sets (they seem to have: "/v2/catalog/catalogitem.page?S=")
+set_links <- raw_sw[str_detect(raw_sw, "/v2/catalog/catalogitem.page\\?S=")]
+
+base_url <- "https://www.bricklink.com"  
+full_links <- paste0(base_url, set_links)
+```
+
+```{r}
+# Names
+names_sw <- sw |>
+  xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> 
+  html_text()
+
+# Full table
+brick_starwars <- tibble(
+  Name = names_sw,
+  Link = full_links)
+```
+
+```{r}
+scrape_products <- function(base_url, total_pages, category) {
+  
+  paged_url <- paste0(base_url, "&pg=%d&v=1")
+  
+  # Empty vectors
+  all_names <- c()
+  all_links <- c()
+  
+  for (page in 1:total_pages) {
+    
+    # First webpage url
+    if (page == 1) {
+      page_url <- base_url
+    } else {
+      page_url <- sprintf(paged_url, page) #url for other webpages
+    }
+    
+    link <- read_html(page_url)
+    
+    raw_links <- link |> # links
+      xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
+      html_attr("href")
+    
+    set_links <- raw_links[str_detect(raw_links, "/v2/catalog/catalogitem.page\\?S=")]
+    full_links <- paste0("https://www.bricklink.com", set_links)
+    
+    names <- link |> # names
+      xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> 
+      html_text()
+    
+    # Store them in the vectors
+    all_names <- c(all_names, names)
+    all_links <- c(all_links, full_links)
+  }
+  
+  tibble(Name = all_names, Link = all_links, Category = category) # final df
+}
+
+brick_starwars <- scrape_products(sw_link, total_pages = 20, "Star Wars")
+```
+
+### Product prices
+```{r}
+link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
+  read_html()
+
+link_product |> 
+      xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
+      html_attr("href")
+
+link_historial <- 
+  "https://www.bricklink.com/catalogPG.asp?S=3219-1&ColorID=0"|> 
+  read_html()
+
+link_historial |> 
+  xml_find_all("//table[@class='fv']//td[@valign='TOP']") |> 
+  html_text()
+
+current_items <- link_historial |> 
+  xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") |> # the number 3 indicates the number of the table that we want. In this case, current items for sale.
+  html_text()
+
+current_items
+```
+
+```{r}
+# Output cleaning
+titles <- str_extract_all(current_items, "[A-Za-z ]+(?=:)", simplify = TRUE)
+values <- str_extract_all(current_items, "(?<=:)[^A-Za-z]+", simplify = TRUE)
+
+# Tibble with clean data
+table_current_items <- tibble(
+  Title = str_trim(titles),
+  Value = str_trim(values))
 ```
 
