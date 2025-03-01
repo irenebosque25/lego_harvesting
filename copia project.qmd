@@ -30,113 +30,6 @@ To obtain and analyze this data, we will implement web scraping techniques using
 
 Through this research, we aim to uncover patterns that help identify which themes are the most profitable over time, providing valuable insights for both collectors and investors in this emerging market.
 
-To check the childrens of a node. Esto busca el primer child
-
-```{r}
-# xml_child returns only one child (specified in search)
-# Here, jason is the first child
-xml_child(xml_raw, search = 1)
-```
-
-Y esto el segundo:
-
-```{r}
-# Here, carol is the second child
-xml_child(xml_raw, search = 2)
-```
-
-Using the `xml_attrs` function we can extract all attributes that match a specific name:
-
-```{r}
-person_nodes <- xml_children(child_xml)
-```
-
-```{r}
-# Extract the attribute type from all nodes
-xml_attrs(person_nodes, "type")
-```
-
-Aquí te encontraria el nod person ya que es el unico que tiene el atributo *type:*
-
-```         
-## <people> ##   <jason> ##     <person [type]> ##       <first_name> ##         <married> ##           {text} ##       <last_name> ##         {text} ##       <occupation> ##         {text} ##   <carol> ##     <person [type]> ##       <first_name> ##         <married> ##           {text} ##       <last_name> ##         {text} ##       <occupation> ##         {text}
-```
-
-Using the `xml_path` function you can even find the ‘address’ of these nodes to retrieve specific tags without having to write down `xml_children` many times. For example:
-
-```{r}
-xml_path(person_nodes)
-
-# You can use results from xml_path like directories
-xml_find_all(xml_raw, "/people/jason/person")
-```
-
-`//` is very handy, it means: search the entire document and bring me back all `<dansimmons>` tags:
-
-```{r}
-book_xml %>%
-  xml_find_all("//dansimmons")
-```
-
-What would an XPath expression look like to subset only the 2nd `<book>` tag of `dansimmons`? We can tell XPath the position of the tag we want using `[number]`, where number is replaced with the position:
-
-```{r}
-book_xml %>%
-  xml_find_all("//dansimmons/book[2]")
-```
-
-Path introduces the `*` as a wildcard pattern to return all children of current parent tag.:
-
-```{r}
-book_xml %>%
-  xml_find_all("//dansimmons/*")
-```
-
-Similarly, `*` can be used to fill out a tag which you don’t know the name of. You know that each author has `<book>` tags but you don’t know the name of all authors. You could extract all book tags like this:
-
-```{r}
-book_xml %>%
-  xml_find_all("/*/*/*/book")
-```
-
-Whenever we want our tags to match a specific attribute we can add two brackets at the end of the tag and match the attribute to what we’re after.
-
-```{r}
-book_xml %>%
-  xml_find_all("//dansimmons//book[@price='yes']") %>%
-  xml_text()
-```
-
-XPath has all the goodies to perform basic filtering (`and`, `or`, `=`, `!=`) but also has additional functions that are useful for filtering. Some of the most common ones include:
-
--   [`contains()`](https://tidyselect.r-lib.org/reference/starts_with.html)
-
--   `starts-with()`
-
--   [`text()`](https://rdrr.io/r/graphics/text.html)
-
--   [`not()`](https://magrittr.tidyverse.org/reference/aliases.html)
-
--   [`count()`](https://dplyr.tidyverse.org/reference/count.html)
-
-```{r}
-library(rvest)
-library(xml2)
-library(httr)
-
-url <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
-
-url <- url |> 
-  read_html()
-
-url |> 
-  xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")|> xml_parent() |> xml_parent() |> xml_parent() |> 
-  html_table()
-
-```
-
-
-
 ```{r}
 library(stringr)
 
@@ -173,3 +66,324 @@ pieces <- disney |>
 
 pieces
 ```
+
+```{r}
+library(rvest)
+library(stringr)
+
+# Definir la función para extraer los datos de LEGO Disney
+extract_lego_data <- function(base_url, max_pages = 4) {
+  
+  # Vectores para almacenar los resultados
+  all_prices <- c()
+  all_titles <- c()
+  all_pieces <- c()
+  
+  # Recorrer las páginas de LEGO Disney
+  for (page_num in 1:max_pages) {
+    # Construir la URL de la página actual
+    page_url <- paste0(base_url, "?page=", page_num, "&offset=0")
+    
+    # Leer la página
+    page <- read_html(page_url)
+    
+    # Extraer los precios
+    prices <- page |> 
+      xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
+      html_text() 
+    
+    
+    # Eliminar comas, espacios y símbolos de euro
+    prices <- gsub(",", ".", prices)
+    prices <- str_replace(prices, "\\s?€$", "") |> 
+      as.numeric()
+    
+    # Extraer los títulos
+    titles <- page |> 
+      xml_find_all("//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
+      xml_children() |> 
+      html_text()
+    
+    # Extraer el número de piezas
+    pieces <- page |> 
+      xml_find_all("//span[@data-test='product-leaf-piece-count-label']") |>
+      html_text() |> 
+      as.numeric()
+    
+    # Filtrar títulos que contienen "llavero" (en minúsculas) y sus datos asociados
+    filter_llavero <- str_detect(titles, regex("llavero", ignore_case = TRUE))
+    
+    titles <- titles[!filter_llavero]
+    prices <- prices[!filter_llavero]
+    pieces <- pieces[!filter_llavero]
+    
+    # Almacenar los resultados en los vectores
+    all_prices <- c(all_prices, prices)
+    all_titles <- c(all_titles, titles)
+    all_pieces <- c(all_pieces, pieces)
+    
+    # Pausar un momento para no hacer solicitudes demasiadas rápidas
+    Sys.sleep(2)
+  }
+  
+  # Crear un data frame con los resultados
+  lego_data <- data.frame(
+    Title = all_titles,
+    Price = all_prices,
+    PieceCount = all_pieces
+  )
+  
+  return(lego_data)
+}
+```
+
+```{r}
+# Disney
+url_disney <- "https://www.lego.com/es-es/themes/disney"
+lego_disney <- extract_lego_data(url_disney, max_pages = 4) |> 
+  mutate("Franchise"= "Disney")
+```
+
+```{r}
+#Harry Potter
+url_harryp <- "https://www.lego.com/es-es/themes/harry-potter"
+lego_harryp <- extract_lego_data(url_harryp, max_pages = 4)|> 
+  mutate("Franchise"= "Harry Potter")
+```
+
+```{r}
+#Star Wars
+url_starwars <- "https://www.lego.com/es-es/themes/star-wars"
+lego_starwars <- extract_lego_data(url_starwars, max_pages = 6)|> 
+  mutate("Franchise"= "Star Wars")
+```
+
+```{r}
+#Super Mario
+url_supermario <- "https://www.lego.com/es-es/themes/super-mario"
+lego_supermario <- extract_lego_data(url_supermario, max_pages = 2)|> 
+  mutate("Franchise"= "Super Mario")
+```
+
+```{r}
+#Lord of the Rings
+url_rings<- "https://www.lego.com/es-es/themes/lord-of-the-rings"
+lego_lotr <- extract_lego_data(url_rings, max_pages = 2)|> 
+  mutate("Franchise"= "Lord of the Rings")
+```
+
+```{r}
+#Marvel
+url_marvel <- "https://www.lego.com/es-es/themes/marvel"
+lego_marvel <- extract_lego_data(url_marvel, max_pages = 4)|> 
+  mutate("Franchise"= "Marvel")
+```
+
+```{r}
+#City
+url_city <-"https://www.lego.com/es-es/themes/city"
+lego_city <- extract_lego_data(url_city, max_pages = 5)|> 
+  mutate("Franchise"= "City")
+```
+
+```{r}
+url_jurassic <- "https://www.lego.com/es-es/themes/jurassic-world"
+lego_jurassic <- extract_lego_data(url_jurassic, max_pages = 1) |> 
+  mutate("Franchise"= "Jurassic World")
+```
+
+Las unimos todas:
+
+```{r}
+library(tidyverse)
+official_lego <- bind_rows(lego_disney, lego_city, lego_harryp, lego_jurassic, lego_lotr, lego_marvel, lego_starwars, lego_supermario)
+```
+
+Eliminamos los NA de piezas ya que no son sets de lego si no otros productos que vende la marca como peluches, boligrafos, libretas.... que no nos interesan para nuestro estudio
+
+```{r}
+official_lego <- official_lego |> 
+  drop_na (PieceCount)
+```
+
+# BrickLink
+
+```{r}
+library(rvest)
+library(xml2)
+library(httr)
+library(stringr)
+
+url<- "https://www.bricklink.com/catalogTree.asp?itemType=S"
+
+lego <- read_html(url)
+
+# All the links inside the main page
+links <- lego |>
+  html_nodes("a") |> 
+  html_attr("href")
+
+# Links of the main sections
+section_links <- 
+  links[grepl("catalogList.asp\\?catType=S&catString=[0-9]+$", links)]
+
+# Names of the main sections
+section_names <- lego |> 
+  html_nodes("a b") |> 
+  html_text()
+
+section_links <- paste0("https://www.bricklink.com", section_links)
+
+# Data.frame with all the info
+main_sections <- data.frame(
+  section_name = section_names,
+  section_url = section_links)
+
+```
+
+Intentamos scrapear primero para Star Wars y luego ya normalizamos para el resto de franquicias:
+
+```{r}
+#vector con los links
+link <- "https://www.bricklink.com/catalogList.asp?catType=S&catString=65" |> 
+  read_html()
+
+raw_links <- link |> 
+  xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
+  html_attr("href")
+
+# Filtrar solo los que llevan a sets (parecen tener "/v2/catalog/catalogitem.page?S=")
+set_links <- raw_links[str_detect(raw_links, "/v2/catalog/catalogitem.page\\?S=")]
+
+base_url <- "https://www.bricklink.com"  
+full_links <- paste0(base_url, set_links)
+```
+
+```{r}
+#vector con los nombres
+names <- link |>
+  xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> html_text() 
+  
+```
+
+```{r}
+brick_starwars <- tibble(
+  Name = names,
+  Link = full_links
+)
+```
+
+Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya que hay 20, y esto solo corre la primera de todas y por lo tanto solo los 50 primeros productos:
+
+```{r}
+# Definir la función
+scrape_products <- function(base_url, total_pages) {
+  
+  # Crear la URL paginada
+  paged_url <- paste0(base_url, "&pg=%d&v=1")  # Agrega paginación
+  
+  # Inicializar vectores vacíos
+  all_names <- c()
+  all_links <- c()
+  
+  # Recorrer todas las páginas
+  for (page in 1:total_pages) {
+    
+    # Determinar la URL de la página actual
+    if (page == 1) {
+      page_url <- base_url  # Primera página usa la URL base
+    } else {
+      page_url <- sprintf(paged_url, page)  # Otras páginas usan la URL paginada
+    }
+    
+    # Leer la página web
+    link <- read_html(page_url)
+    
+    # Extraer los links de los sets
+    raw_links <- link |> 
+      xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
+      html_attr("href")
+    
+    set_links <- raw_links[str_detect(raw_links, "/v2/catalog/catalogitem.page\\?S=")]
+    full_links <- paste0("https://www.bricklink.com", set_links)
+    
+    # Extraer los nombres
+    names <- link |> 
+      xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> 
+      html_text()
+    
+    # Guardar en vectores
+    all_names <- c(all_names, names)
+    all_links <- c(all_links, full_links)
+  }
+  
+  # Crear el dataframe final
+  tibble(Name = all_names, Link = all_links)
+}
+
+# USO: Scrapear Star Wars (solo cambiando la URL)
+brick_starwars <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=65", total_pages = 20)
+
+```
+
+Ya tenemos los 974 productos de la francicia de StarWars. Ahora hay que normalizarlo de todos los links que seria coger el link de la franquicia y cambiarlo en scrape_products, y cambiar tambien manualmente el numero de paginas que tenga. Lo probamos con Harry Potter:
+
+```{r}
+main_sections |> 
+  filter(section_name=="Harry Potter")
+```
+
+```{r}
+brick_harrypotter <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=227", total_pages = 4)	
+```
+
+va genial que ilusion pablo!!!!!!!
+
+Lo que hay que intentar luego es automatizar todo el proceso que de la primera pagina de links haga el segundo proceso y el tercero y asi sabes??? pero bueno lo intentamos al final.
+
+Ahora intentamos acceder al link de el historial de precios a partir de un producto en concreto(cogido de la lista de links anteriores), en este caso TIE Fighter - Mini polybag de la franquicia Star Wars:
+
+```{r}
+link_producto <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
+  read_html()
+
+link_producto |> 
+      xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
+      html_attr("href")
+```
+
+oye yo no entiendo porque me esta saliendo todo tan bien la vida es maravillosa
+
+Ahora dentro del historial de precios del producto necesitamos substraer la tabla Current Items for Sale: New (no??? es ese el que queremos verdad) lo que este en concreto esta en ROL y no se que divisa es esa la vd:
+
+```{r}
+link_historial <- "https://www.bricklink.com/catalogPG.asp?S=3219-1&ColorID=0" |> 
+  read_html()
+
+
+link_historial |> 
+  xml_find_all("//table[@class='fv']//td[@valign='TOP']") |> 
+  html_text()
+
+current_items <- link_historial |> 
+  xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") |> #si luego cambiamos de opinion y queremos coger otra tabla como used, last month sales o lo que sea cambiamos el numero 3 y ya esta, ahora solo he cogido la tabla: Current Items for Sale: New
+  html_text()
+
+current_items
+```
+
+Ahora la limpiamos: (vale pablo esto no lo he acabao necesito acabar de limpiarlo q me pondre ahora con ello y ya parooooo)
+
+```{r}
+# Expresión regular para extraer los títulos y los valores
+titles <- str_extract_all(current_items, "[A-Za-z ]+(?=:)", simplify = TRUE)
+values <- str_extract_all(current_items, "(?<=:)[^A-Za-z]+", simplify = TRUE)
+
+# Crear un tibble con los datos limpios
+table_current_items <- tibble(
+  Title = str_trim(titles),  # Limpiar espacios extra
+  Value = str_trim(values)   # Limpiar espacios extra
+)
+```
+
+je
