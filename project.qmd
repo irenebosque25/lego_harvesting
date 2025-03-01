@@ -6,7 +6,7 @@ editor: visual
 
 ## APUNTES
 
-INTRODUCÇAO
+INTRODUCTION
 
 In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (citar). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
 
@@ -134,8 +134,6 @@ url |>
   html_table()
 
 ```
-
-
 
 ```{r}
 library(stringr)
