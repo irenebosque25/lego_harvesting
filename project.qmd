@@ -1,5 +1,6 @@
 ---
 title: "DATA HARVESTING PROJECT"
+author: Irene Bosque and Pablo Aísa
 format: html
 editor: visual
 ---
@@ -107,9 +108,29 @@ url <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
 url |> 
   read_html() |> 
   xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")#|> xml_parent() |> xml_parent() |> xml_parent() |> 
-  #html_table() |> 
-  
+# html_table() |> 
 
+lego <- read_html(url)
 
+# All the links inside the main page
+links <- lego |>
+  html_nodes("a") |> 
+  html_attr("href")
+
+# Links of the main sections
+section_links <- 
+  links[grepl("catalogList.asp\\?catType=S&catString=[0-9]+$", links)]
+
+# Names of the main sections
+section_names <- lego |> 
+  html_nodes("a b") |> 
+  html_text()
+
+section_links <- paste0("https://www.bricklink.com", section_links)
+
+# Data.frame with all the info
+main_sections <- data.frame(
+  section_name = section_names,
+  section_url = section_links)
 
 ```
