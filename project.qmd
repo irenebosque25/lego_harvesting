@@ -6,7 +6,29 @@ editor: visual
 
 ## APUNTES
 
-Let's try
+INTRODUCÇAO
+
+In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (citar). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
+
+This project aims to explore the factors driving the revaluation of LEGO sets, analyzing how their prices change over time and identifying which sets offer the greatest return on investment. By examining historical and current market data, we seek to uncover patterns that influence a set’s desirability and long-term worth.
+
+1.  **The official LEGO website**: To obtain the current prices of sets available on the market.
+
+2.  **BrickLink**: A comprehensive online archive that tracks all LEGO sets, their specifications, and their price evolution over time.
+
+The dataset will include essential details such as initial retail price, current market value, percentage appreciation, number of pieces and theme classification.
+
+With the help of statistical analysis and visualizations, we will explore questions such as:
+
+-   Which LEGO sets have appreciated the most over time?
+
+-   Do certain themes, such as *Star Wars* or *Modular Buildings*, have higher investment potential?
+
+-   How do factors like piece count and exclusive minifigures impact resale value?
+
+To obtain and analyze this data, we will implement web scraping techniques using **R** and the **rvest** package, allowing us to track both historical and real-time pricing trends.
+
+Through this research, we aim to uncover patterns that help identify which themes are the most profitable over time, providing valuable insights for both collectors and investors in this emerging market.
 
 To check the childrens of a node. Esto busca el primer child
 
@@ -104,12 +126,50 @@ library(httr)
 
 url <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
 
+url <- url |> 
+  read_html()
+
 url |> 
-  read_html() |> 
-  xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")#|> xml_parent() |> xml_parent() |> xml_parent() |> 
-  #html_table() |> 
-  
+  xml_find_all("//table[@class='bg-color--white catalog-list__category-list--internal catalog-tree__category-list--internal']//div[contains(text(), 'Tree')]")|> xml_parent() |> xml_parent() |> xml_parent() |> 
+  html_table()
+
+```
 
 
 
+```{r}
+library(stringr)
+
+disney <- "https://www.lego.com/es-es/themes/disney"
+
+disney <- disney |> 
+  read_html()
+
+prices <- disney |> 
+  xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
+  html_text() 
+
+prices <- gsub(",", ".", prices)
+prices <- str_replace(prices, "\\s?€$", "") |> 
+  as.numeric()
+
+prices
+```
+
+```{r}
+titles <- disney |> 
+  xml_find_all("//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
+  xml_children() |> 
+  html_text()
+
+titles
+```
+
+```{r}
+pieces <- disney |> 
+  xml_find_all("//span[@data-test='product-leaf-piece-count-label']")|>
+  html_text() |> 
+  as.numeric()
+
+pieces
 ```
