@@ -6,7 +6,7 @@ editor: visual
 
 ## APUNTES
 
-INTRODUCÇAO
+INTRODUCCIÓN
 
 In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (citar). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
 
@@ -32,6 +32,10 @@ Through this research, we aim to uncover patterns that help identify which theme
 
 ```{r}
 library(stringr)
+library(rvest)
+library(tidyverse)
+library(tibble)
+library(xml2)
 
 disney <- "https://www.lego.com/es-es/themes/disney"
 
@@ -68,8 +72,6 @@ pieces
 ```
 
 ```{r}
-library(rvest)
-library(stringr)
 
 # Definir la función para extraer los datos de LEGO Disney
 extract_lego_data <- function(base_url, max_pages = 4) {
@@ -372,18 +374,26 @@ current_items <- link_historial |>
 current_items
 ```
 
-Ahora la limpiamos: (vale pablo esto no lo he acabao necesito acabar de limpiarlo q me pondre ahora con ello y ya parooooo)
+Ahora la limpiamos:
 
 ```{r}
 # Expresión regular para extraer los títulos y los valores
-titles <- str_extract_all(current_items, "[A-Za-z ]+(?=:)", simplify = TRUE)
-values <- str_extract_all(current_items, "(?<=:)[^A-Za-z]+", simplify = TRUE)
+titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)"))
+
+# Extraer valores después de los dos puntos
+values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
+
 
 # Crear un tibble con los datos limpios
 table_current_items <- tibble(
-  Title = str_trim(titles),  # Limpiar espacios extra
-  Value = str_trim(values)   # Limpiar espacios extra
+  Title = str_trim(titles), 
+  Value = str_trim(values)   
 )
-```
 
-je
+# Separar moneda y número si existe una divisa
+table_current_items <- table_current_items %>%
+  mutate(Currency = str_extract(Value, "^[A-Z]+"), 
+         Value = str_extract(Value, "[0-9,.]+"))  
+
+table_current_items
+```

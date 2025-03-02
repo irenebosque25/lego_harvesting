@@ -233,7 +233,6 @@ main_categories <- data.frame(
   category_url = cat_links)
 ```
 
-
 ```{r}
 # # Function to extract the number of pages that contain products for each category
 # total_pages <- function(url) {
@@ -332,6 +331,7 @@ brick_starwars <- scrape_products(sw_link, total_pages = 20, "Star Wars")
 ```
 
 ### Product prices
+
 ```{r}
 link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
   read_html()
@@ -356,13 +356,23 @@ current_items
 ```
 
 ```{r}
-# Output cleaning
-titles <- str_extract_all(current_items, "[A-Za-z ]+(?=:)", simplify = TRUE)
-values <- str_extract_all(current_items, "(?<=:)[^A-Za-z]+", simplify = TRUE)
+# Expresión regular para extraer los títulos y los valores
+titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)"))
 
-# Tibble with clean data
+# Extraer valores después de los dos puntos
+values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
+
+
+# Crear un tibble con los datos limpios
 table_current_items <- tibble(
-  Title = str_trim(titles),
-  Value = str_trim(values))
-```
+  Title = str_trim(titles), 
+  Value = str_trim(values)   
+)
 
+# Separar moneda y número si existe una divisa
+table_current_items <- table_current_items %>%
+  mutate(Currency = str_extract(Value, "^[A-Z]+"), 
+         Value = str_extract(Value, "[0-9,.]+"))  
+
+table_current_items
+```
