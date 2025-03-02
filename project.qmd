@@ -81,17 +81,24 @@ pieces
 ```{r}
 # Function for LEGO Disney data
 extract_lego_data <- function(base_url, max_pages = 4) {
-  # Vectors to store the results
-  all_prices <- c()
-  all_titles <- c()
-  all_pieces <- c()
+  
+  # List to store the results
+    lego_list <- list()  
   
   for (page_num in 1:max_pages) {
     page_url <- paste0(base_url, "?page=", page_num, "&offset=0")
-    
     page <- read_html(page_url)
     
-    prices <- page |> # prices
+    # Extract the blocks of each product
+    product_nodes <- page |> 
+    xml_find_all("//article[@class='ProductLeaf_wrapper__H0TCb ']")  
+    
+    # Extract the information of each block/product
+    titles <- product_nodes |> 
+      xml_find_first(".//a[contains(@class, 'ProductLeaf_title')]") |> 
+      html_text()
+    
+    prices <- product_nodes |> 
       xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
       html_text() 
     
@@ -99,38 +106,25 @@ extract_lego_data <- function(base_url, max_pages = 4) {
     prices <- str_replace(prices, "\\s?€$", "") |> 
       as.numeric()
     
-    titles <- page |> # titles
-      xml_find_all(
-        "//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
-      xml_children() |> 
-      html_text()
-    
-    pieces <- page |> # pieces
-      xml_find_all("//span[@data-test='product-leaf-piece-count-label']") |>
+    pieces <- product_nodes |> 
+      xml_find_first(".//span[@data-test='product-leaf-piece-count-label']") |> 
       html_text() |> 
       as.numeric()
     
-    # Filter titles that contain "llavero" and their data associated
-    filter_llavero <- str_detect(titles, regex("llavero", ignore_case = TRUE))
-    
-    titles <- titles[!filter_llavero]
-    prices <- prices[!filter_llavero]
-    pieces <- pieces[!filter_llavero]
+    # Create a temporal dataframe
+    lego_page <- tibble(
+      Title = titles,
+      Price = prices,
+      PieceCount = pieces
+    )
     
     # Store the results
-    all_prices <- c(all_prices, prices)
-    all_titles <- c(all_titles, titles)
-    all_pieces <- c(all_pieces, pieces)
-    
-    # Rest for two seconds
+    lego_list[[page_num]] <- lego_page
     Sys.sleep(2)
   }
   
-  # Data frame with the results
-  lego_data <- data.frame(
-    Title = all_titles,
-    Price = all_prices,
-    PieceCount = all_pieces)
+  # Combine all pages in a single dataframe
+  lego_data <- bind_rows(lego_list)
   
   return(lego_data)
 }
