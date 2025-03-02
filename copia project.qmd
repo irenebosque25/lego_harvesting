@@ -70,27 +70,34 @@ pieces <- disney |>
 
 pieces
 ```
+```{r}
+product <- disney |> 
+  xml_find_all("//article[@class='ProductLeaf_wrapper__H0TCb ']") 
+
+product
+```
+
 
 ```{r}
 
-# Definir la función para extraer los datos de LEGO Disney
 extract_lego_data <- function(base_url, max_pages = 4) {
   
-  # Vectores para almacenar los resultados
-  all_prices <- c()
-  all_titles <- c()
-  all_pieces <- c()
+  lego_list <- list()  # Lista para almacenar cada página
   
-  # Recorrer las páginas de LEGO Disney
   for (page_num in 1:max_pages) {
-    # Construir la URL de la página actual
     page_url <- paste0(base_url, "?page=", page_num, "&offset=0")
-    
-    # Leer la página
     page <- read_html(page_url)
     
-    # Extraer los precios
-    prices <- page |> 
+    # Extraer los bloques de cada producto
+    product_nodes <- page |> 
+    xml_find_all("//article[@class='ProductLeaf_wrapper__H0TCb ']")  # Asegurar que sean los mismos bloques
+    
+    # Extraer la información dentro de cada bloque
+    titles <- product_nodes |> 
+      xml_find_first(".//a[contains(@class, 'ProductLeaf_title')]") |> 
+      html_text()
+    
+    prices <- product_nodes |> 
       xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
       html_text() 
     
@@ -100,43 +107,32 @@ extract_lego_data <- function(base_url, max_pages = 4) {
     prices <- str_replace(prices, "\\s?€$", "") |> 
       as.numeric()
     
-    # Extraer los títulos
-    titles <- page |> 
-      xml_find_all("//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
-      xml_children() |> 
-      html_text()
     
-    # Extraer el número de piezas
-    pieces <- page |> 
-      xml_find_all("//span[@data-test='product-leaf-piece-count-label']") |>
+    pieces <- product_nodes |> 
+      xml_find_first(".//span[@data-test='product-leaf-piece-count-label']") |> 
       html_text() |> 
       as.numeric()
     
-    # Filtrar títulos que contienen "llavero" (en minúsculas) y sus datos asociados
-    filter_llavero <- str_detect(titles, regex("llavero", ignore_case = TRUE))
+    # Crear un dataframe temporal
+    lego_page <- tibble(
+      Title = titles,
+      Price = prices,
+      PieceCount = pieces
+    )
     
-    titles <- titles[!filter_llavero]
-    prices <- prices[!filter_llavero]
-    pieces <- pieces[!filter_llavero]
-    
-    # Almacenar los resultados en los vectores
-    all_prices <- c(all_prices, prices)
-    all_titles <- c(all_titles, titles)
-    all_pieces <- c(all_pieces, pieces)
-    
-    # Pausar un momento para no hacer solicitudes demasiadas rápidas
+    # Guardar la página en la lista
+    lego_list[[page_num]] <- lego_page
     Sys.sleep(2)
   }
   
-  # Crear un data frame con los resultados
-  lego_data <- data.frame(
-    Title = all_titles,
-    Price = all_prices,
-    PieceCount = all_pieces
-  )
+  # Combinar todas las páginas en un solo data frame
+  lego_data <- bind_rows(lego_list)
   
   return(lego_data)
 }
+
+
+
 ```
 
 ```{r}
