@@ -230,6 +230,10 @@ main_categories <- data.frame(
 ### Number of pages with products (we will use it later)
 
 ```{r}
+sw_link <- main_categories |> 
+  filter(category_name == "Star Wars") |> 
+  select(category_url) |> 
+  as.character() 
 
 sw <- sw_link |> 
   read_html()
@@ -238,7 +242,7 @@ sw_pages <- sw |>
   html_nodes(xpath ="//div[2]/div[2]/b[3]") |> 
   html_text() |> 
   as.numeric()
-
+sw_pages
 ```
 
 ```{r}
@@ -267,16 +271,12 @@ main_categories <- main_categories |>
 ### First try with Star Wars
 
 ```{r}
-sw_link <- main_categories |> 
-  filter(category_name == "Star Wars") |> 
-  select(category_url) |> 
-  as.character() 
 
 sw <- sw_link |> 
   read_html()
 
 raw_sw <- sw |> 
-  xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
+  xml_find_all("//div[@class='container-xl container-body l-pad-yl-margin-bottom catalog-list__body']//a") |> 
   html_attr("href")
 
 # Only the ones for sets (they seem to have: "/v2/catalog/catalogitem.page?S=")
@@ -299,52 +299,60 @@ brick_starwars <- tibble(
 ```
 
 ```{r}
-scrape_products <- function(base_url, total_pages, category) {
+scrape_products <- function(base_url, total_pages) {
   
-  paged_url <- paste0(base_url, "&pg=%d&v=1")
+  # Crear la URL paginada
+  paged_url <- paste0(base_url, "&pg=%d&v=1")  # Agrega paginación
   
-  # Empty vectors
+  # Inicializar vectores vacíos
   all_names <- c()
   all_links <- c()
   
+  # Recorrer todas las páginas
   for (page in 1:total_pages) {
     
-    # First webpage url
+    # Determinar la URL de la página actual
     if (page == 1) {
-      page_url <- base_url
+      page_url <- base_url  # Primera página usa la URL base
     } else {
-      page_url <- sprintf(paged_url, page) #url for other webpages
+      page_url <- sprintf(paged_url, page)  # Otras páginas usan la URL paginada
     }
     
+    # Leer la página web
     link <- read_html(page_url)
     
-    raw_links <- link |> # links
+    # Extraer los links de los sets
+    raw_links <- link |> 
       xml_find_all("//div[@class='container-xl container-body l-pad-y l-margin-bottom catalog-list__body']//a") |> 
       html_attr("href")
     
     set_links <- raw_links[str_detect(raw_links, "/v2/catalog/catalogitem.page\\?S=")]
     full_links <- paste0("https://www.bricklink.com", set_links)
     
-    names <- link |> # names
+    # Extraer los nombres
+    names <- link |> 
       xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> 
       html_text()
     
-    # Store them in the vectors
+    # Guardar en vectores
     all_names <- c(all_names, names)
     all_links <- c(all_links, full_links)
   }
   
-  tibble(Name = all_names, Link = all_links, Category = category) # final df
+  # Crear el dataframe final
+  tibble(Name = all_names, Link = all_links)
 }
 
 brick_starwars <- scrape_products(sw_link, total_pages = 20, "Star Wars")
 
-# all_products <- main_categories %>%
-#   # Usamos pmap() para aplicar la función a cada fila
-#   mutate(product_data = pmap(list(category_url, n_pages, category_name), scrape_products)) %>%
-#   # Extraemos los datos de 'product_data' y los combinamos en un solo tibble
-#   select(product_data) %>%
-#   unnest(cols = c(product_data))
+all_products <- main_categories |> 
+  filter(category_name %in% c("Town", "Disney", "Harry Potter", 
+                              "Jurassic Park", 
+                              "The Hobbit and The Lord of the Rings", 
+                            "Super Heroes", "Star Wars", "Super Mario"))|> 
+  mutate(product_data = pmap(list(category_url, n_pages), scrape_products)) |> 
+  select(product_data, category_name) |> 
+  unnest(cols = c(product_data))
 ```
 
 ### Product prices
