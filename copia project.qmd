@@ -185,6 +185,7 @@ lego_city <- extract_lego_data(url_city, max_pages = 5)|>
 ```
 
 ```{r}
+# Jurassic World
 url_jurassic <- "https://www.lego.com/es-es/themes/jurassic-world"
 lego_jurassic <- extract_lego_data(url_jurassic, max_pages = 1) |> 
   mutate("Franchise"= "Jurassic World")
@@ -207,10 +208,6 @@ official_lego <- official_lego |>
 # BrickLink
 
 ```{r}
-library(rvest)
-library(xml2)
-library(httr)
-library(stringr)
 
 url<- "https://www.bricklink.com/catalogTree.asp?itemType=S"
 
@@ -264,17 +261,24 @@ names <- link |>
   
 ```
 
+
 ```{r}
-brick_starwars <- tibble(
-  Name = names,
-  Link = full_links
-)
+year_pieces <- link |> 
+  xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//font[@class='fv']") |> 
+  html_text()
+
+extract_info <- function(entry) {
+  pieces <- str_extract(entry, "\\d+ Parts") %>% str_remove(" Parts")
+  year <- str_extract(entry, "\\d{4}")
+  set <- str_extract(entry, "(?<=Catalog: Sets:).*")
+  
+  return(tibble(Pieces = as.integer(pieces), Year = as.integer(year), Set = set))
+}
+
 ```
 
-Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya que hay 20, y esto solo corre la primera de todas y por lo tanto solo los 50 primeros productos:
-
 ```{r}
-# Definir la función
+# Función para scrapear productos y extraer información
 scrape_products <- function(base_url, total_pages) {
   
   # Crear la URL paginada
@@ -283,6 +287,9 @@ scrape_products <- function(base_url, total_pages) {
   # Inicializar vectores vacíos
   all_names <- c()
   all_links <- c()
+  all_pieces <- c()
+  all_years <- c()
+  all_sets <- c()
   
   # Recorrer todas las páginas
   for (page in 1:total_pages) {
@@ -310,19 +317,32 @@ scrape_products <- function(base_url, total_pages) {
       xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> 
       html_text()
     
+    # Extraer información adicional (piezas, año, título limpio)
+    raw_data <- link |> 
+      xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//font[@class='fv']") |> 
+      html_text()
+    
+    cleaned_data <- map_dfr(raw_data, extract_info)
+    
     # Guardar en vectores
     all_names <- c(all_names, names)
     all_links <- c(all_links, full_links)
+    all_pieces <- c(all_pieces, cleaned_data$Pieces)
+    all_years <- c(all_years, cleaned_data$Year)
+    all_sets <- c(all_sets, cleaned_data$Set)
   }
   
   # Crear el dataframe final
-  tibble(Name = all_names, Link = all_links)
+  tibble(Name = all_names, Link = all_links, Pieces = all_pieces, Year = all_years, Set = all_sets)
 }
 
 # USO: Scrapear Star Wars (solo cambiando la URL)
 brick_starwars <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=65", total_pages = 20)
 
 ```
+
+Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya que hay 20, y esto solo corre la primera de todas y por lo tanto solo los 50 primeros productos:
+
 
 Ya tenemos los 974 productos de la francicia de StarWars. Ahora hay que normalizarlo de todos los links que seria coger el link de la franquicia y cambiarlo en scrape_products, y cambiar tambien manualmente el numero de paginas que tenga. Lo probamos con Harry Potter:
 
@@ -373,23 +393,25 @@ current_items
 Ahora la limpiamos:
 
 ```{r}
-# Expresión regular para extraer los títulos y los valores
+# Extraer títulos y valores
 titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)"))
-
-# Extraer valores después de los dos puntos
 values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
 
+# Extraer la divisa (asumiendo que todas las filas tienen la misma)
+currency <- unique(na.omit(str_extract(values, "^[A-Z]+")))[1]
 
-# Crear un tibble con los datos limpios
-table_current_items <- tibble(
-  Title = str_trim(titles), 
-  Value = str_trim(values)   
-)
+# Extraer los valores numéricos
+numeric_values <- str_extract(values, "[0-9,.]+")
 
-# Separar moneda y número si existe una divisa
-table_current_items <- table_current_items %>%
-  mutate(Currency = str_extract(Value, "^[A-Z]+"), 
-         Value = str_extract(Value, "[0-9,.]+"))  
+# Crear un tibble con títulos como nombres de columna y una sola columna para la divisa
+final_result <- tibble(!!!set_names(numeric_values, titles)) %>%
+  mutate(Currency = currency)  # Agregar columna única para la divisa
 
-table_current_items
+
+final_result
+
 ```
+
+!!! desempaqueta el vector nombrado en columnas.
+set_names(...) asigna nombres de variable.
+mutate(...) agrega la moneda en una columna separada.
