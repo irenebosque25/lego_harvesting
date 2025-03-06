@@ -209,32 +209,78 @@ official_lego <- official_lego |>
 
 ```{r}
 
-url<- "https://www.bricklink.com/catalogTree.asp?itemType=S"
-
-lego <- read_html(url)
+brick <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
+brick <- read_html(brick)
 
 # All the links inside the main page
-links <- lego |>
+links <- brick |>
   html_nodes("a") |> 
   html_attr("href")
 
-# Links of the main sections
-section_links <- 
+# Links of the main categories
+cat_links <- 
   links[grepl("catalogList.asp\\?catType=S&catString=[0-9]+$", links)]
 
-# Names of the main sections
-section_names <- lego |> 
+# Names of the main categories
+cat_names <- brick |> 
   html_nodes("a b") |> 
   html_text()
 
-section_links <- paste0("https://www.bricklink.com", section_links)
+cat_links <- paste0("https://www.bricklink.com", cat_links)
 
 # Data.frame with all the info
-main_sections <- data.frame(
-  section_name = section_names,
-  section_url = section_links)
-
+main_categories <- data.frame(
+  category_name = cat_names,
+  category_url = cat_links)
 ```
+
+### Number of pages with products (we will use it later)
+
+```{r}
+sw_link <- main_categories |> 
+  filter(category_name == "Star Wars") |> 
+  select(category_url) |> 
+  as.character() 
+
+sw <- sw_link |> 
+  read_html()
+
+sw_pages <- sw |> 
+  html_nodes(xpath ="//div[2]/div[2]/b[3]") |> 
+  html_text() |> 
+  as.numeric()
+sw_pages
+```
+```{r}
+all_products <- main_categories |> 
+  filter(category_name %in% c("Town", "Disney", "Harry Potter", 
+                              "Jurassic Park", 
+                              "The Hobbit and The Lord of the Rings", 
+                            "Super Heroes", "Star Wars", "Super Mario"))
+```
+
+```{r}
+sets_pages <- function(url) {
+  link <- read_html(url)
+  
+  pages <- link |> 
+    html_nodes(xpath = "//div[2]/div[2]/b[3]") |> 
+    html_text() |> 
+    as.numeric()
+  
+  if (length(pages) == 0 || is.na(pages)) {
+    pages <- 1
+  }
+  
+  Sys.sleep(3)
+  
+  return(pages)
+}
+
+main_categories <- all_products |> 
+  mutate(n_pages = sapply(category_url, sets_pages))
+```
+
 
 Intentamos scrapear primero para Star Wars y luego ya normalizamos para el resto de franquicias:
 
@@ -269,10 +315,9 @@ year_pieces <- link |>
 
 extract_info <- function(entry) {
   pieces <- str_extract(entry, "\\d+ Parts") %>% str_remove(" Parts")
-  year <- str_extract(entry, "\\d{4}")
   set <- str_extract(entry, "(?<=Catalog: Sets:).*")
   
-  return(tibble(Pieces = as.integer(pieces), Year = as.integer(year), Set = set))
+  return(tibble(Pieces = as.integer(pieces), Set = set))
 }
 
 ```
@@ -288,7 +333,6 @@ scrape_products <- function(base_url, total_pages) {
   all_names <- c()
   all_links <- c()
   all_pieces <- c()
-  all_years <- c()
   all_sets <- c()
   
   # Recorrer todas las páginas
@@ -328,17 +372,24 @@ scrape_products <- function(base_url, total_pages) {
     all_names <- c(all_names, names)
     all_links <- c(all_links, full_links)
     all_pieces <- c(all_pieces, cleaned_data$Pieces)
-    all_years <- c(all_years, cleaned_data$Year)
     all_sets <- c(all_sets, cleaned_data$Set)
   }
+  Sys.sleep(1)
   
   # Crear el dataframe final
-  tibble(Name = all_names, Link = all_links, Pieces = all_pieces, Year = all_years, Set = all_sets)
+  tibble(Name = all_names, Link = all_links, Pieces = all_pieces, Set = all_sets)
 }
 
 # USO: Scrapear Star Wars (solo cambiando la URL)
 brick_starwars <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=65", total_pages = 20)
+```
 
+
+```{r}
+all_products <- main_categories |> 
+  mutate(product_data = pmap(list(category_url, n_pages), scrape_products)) |> 
+  unnest(cols = c(product_data)) |> 
+  select(-c(category_url, n_pages))
 ```
 
 Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya que hay 20, y esto solo corre la primera de todas y por lo tanto solo los 50 primeros productos:
@@ -346,16 +397,7 @@ Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya qu
 
 Ya tenemos los 974 productos de la francicia de StarWars. Ahora hay que normalizarlo de todos los links que seria coger el link de la franquicia y cambiarlo en scrape_products, y cambiar tambien manualmente el numero de paginas que tenga. Lo probamos con Harry Potter:
 
-```{r}
-main_sections |> 
-  filter(section_name=="Harry Potter")
-```
 
-```{r}
-brick_harrypotter <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=227", total_pages = 4)	
-```
-
-va genial que ilusion pablo!!!!!!!
 
 Lo que hay que intentar luego es automatizar todo el proceso que de la primera pagina de links haga el segundo proceso y el tercero y asi sabes??? pero bueno lo intentamos al final.
 
@@ -364,7 +406,20 @@ Ahora intentamos acceder al link de el historial de precios a partir de un produ
 ```{r}
 link_producto <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
   read_html()
+```
 
+```{r}
+link_producto |> 
+  xml_find_all("//*[@id='id_divBlock_Main']/table[1]/tbody/tr[2]/td[2]/center/table/tbody/tr[1]/td/table/tbody/tr/td[1]/font/a") |> 
+  html_text()
+
+```
+
+
+
+
+aquí se accede al price guide:
+```{r}
 link_producto |> 
       xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
       html_attr("href")
@@ -411,6 +466,12 @@ final_result <- tibble(!!!set_names(numeric_values, titles)) %>%
 final_result
 
 ```
+
+
+
+
+
+
 
 !!! desempaqueta el vector nombrado en columnas.
 set_names(...) asigna nombres de variable.
