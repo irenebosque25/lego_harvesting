@@ -227,25 +227,41 @@ main_categories <- data.frame(
   category_url = cat_links)
 ```
 
+### Number of pages with products (we will use it later)
+
 ```{r}
-# # Function to extract the number of pages that contain products for each category
-# total_pages <- function(url) {
-#   link <- read_html(url)
-#   
-#   page_numbers <- link |> 
-#     html_nodes(xpath = "//div[@class='pagination']//a") |> 
-#     html_text() |> 
-#     as.numeric()
-#   
-#   if (length(page_numbers) == 0) {
-#     return(1)
-#   } else {
-#     return(max(page_numbers, na.rm = TRUE))
-#   }
-# }
-# 
-# main_categories <- main_categories |> 
-#   mutate(products_pages = sapply(category_url, total_pages))
+
+sw <- sw_link |> 
+  read_html()
+
+sw_pages <- sw |> 
+  html_nodes(xpath ="//div[2]/div[2]/b[3]") |> 
+  html_text() |> 
+  as.numeric()
+
+```
+
+```{r}
+
+sets_pages <- function(url) {
+  link <- read_html(url)
+  
+  pages <- link |> 
+    html_nodes(xpath = "//div[2]/div[2]/b[3]") |> 
+    html_text() |> 
+    as.numeric()
+  
+  if (length(pages) == 0 || is.na(pages)) {
+    pages <- 1
+  }
+  
+  Sys.sleep(runif(3))
+  
+  return(pages)
+}
+
+main_categories <- main_categories |> 
+  mutate(n_pages = sapply(category_url, sets_pages))
 ```
 
 ### First try with Star Wars
@@ -322,6 +338,13 @@ scrape_products <- function(base_url, total_pages, category) {
 }
 
 brick_starwars <- scrape_products(sw_link, total_pages = 20, "Star Wars")
+
+# all_products <- main_categories %>%
+#   # Usamos pmap() para aplicar la función a cada fila
+#   mutate(product_data = pmap(list(category_url, n_pages, category_name), scrape_products)) %>%
+#   # Extraemos los datos de 'product_data' y los combinamos en un solo tibble
+#   select(product_data) %>%
+#   unnest(cols = c(product_data))
 ```
 
 ### Product prices
