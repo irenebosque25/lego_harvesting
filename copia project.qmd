@@ -70,13 +70,13 @@ pieces <- disney |>
 
 pieces
 ```
+
 ```{r}
 product <- disney |> 
   xml_find_all("//article[@class='ProductLeaf_wrapper__H0TCb ']") 
 
 product
 ```
-
 
 ```{r}
 
@@ -205,10 +205,27 @@ official_lego <- official_lego |>
   drop_na (PieceCount)
 ```
 
-# BrickLink
+# Web Scraping Process for BrickLink 
+
+We begin the web scraping process for BrickLink, aiming to create a structured dataset containing all the products to be analyzed. Our objective is to extract key variables, including price, release year, and franchise affiliation.
+
+To achieve this, we need to scrape four different hyperlinks within the same website:
+
+-   Main Category Page: The first hyperlink leads to a table listing all LEGO categories available on BrickLink. This includes the franchises we want to compare, such as Star Wars, Super Mario, and others.
+
+-   Category-Specific Product Listings: Clicking on any franchise category takes us to a second hyperlink, which displays all products belonging to that category. This page provides details such as product names, associated LEGO sets, and the number of pieces each product contains.
+
+-   Individual Product Details: By selecting a specific product, we are redirected to a third hyperlink that contains additional information, including the year the product was released. On this page, we also find an option labeled "View Price Guide", which directs us to the final crucial dataset.
+
+-   Price Guide – Current Listings: The fourth hyperlink leads to the "Current Items for Sale: New" table, which is particularly important for our analysis. This table contains real-time market data on new products currently available, including variables such as the total quantity of sales of this product, its average price and its maximum price
+
+To construct our final dataset, we need to sequentially scrape each of these four hyperlinks. We will develop a function that systematically navigates through each of them, extracting relevant data at each stage until we obtain the complete dataset.
+
+## Main Category Page
+
+With these in mind, the first step in this process is to create a table with all categories available in the web and each link that leads to the second hyperlink with the Category-Specific Product Listings. We, then, filter for the specific categories we are interested in:
 
 ```{r}
-
 brick <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
 brick <- read_html(brick)
 
@@ -232,9 +249,18 @@ cat_links <- paste0("https://www.bricklink.com", cat_links)
 main_categories <- data.frame(
   category_name = cat_names,
   category_url = cat_links)
+
 ```
 
-### Number of pages with products (we will use it later)
+```{r}
+all_products <- main_categories |> 
+  filter(category_name %in% c("Town", "Disney", "Harry Potter", 
+                              "Jurassic Park", 
+                              "The Hobbit and The Lord of the Rings", 
+                            "Super Heroes", "Star Wars", "Super Mario"))
+```
+
+Then, we get the number of pages that every category has and we add it to the main_categeories table . First we try for one single category (Star Wars in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories more later:
 
 ```{r}
 sw_link <- main_categories |> 
@@ -250,13 +276,6 @@ sw_pages <- sw |>
   html_text() |> 
   as.numeric()
 sw_pages
-```
-```{r}
-all_products <- main_categories |> 
-  filter(category_name %in% c("Town", "Disney", "Harry Potter", 
-                              "Jurassic Park", 
-                              "The Hobbit and The Lord of the Rings", 
-                            "Super Heroes", "Star Wars", "Super Mario"))
 ```
 
 ```{r}
@@ -281,9 +300,6 @@ main_categories <- all_products |>
   mutate(n_pages = sapply(category_url, sets_pages))
 ```
 
-
-Intentamos scrapear primero para Star Wars y luego ya normalizamos para el resto de franquicias:
-
 ```{r}
 #vector con los links
 link <- "https://www.bricklink.com/catalogList.asp?catType=S&catString=65" |> 
@@ -306,7 +322,6 @@ names <- link |>
   xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong") |> html_text() 
   
 ```
-
 
 ```{r}
 year_pieces <- link |> 
@@ -384,7 +399,6 @@ scrape_products <- function(base_url, total_pages) {
 brick_starwars <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=65", total_pages = 20)
 ```
 
-
 ```{r}
 all_products <- main_categories |> 
   mutate(product_data = pmap(list(category_url, n_pages), scrape_products)) |> 
@@ -394,10 +408,7 @@ all_products <- main_categories |>
 
 Ahora necesitamos hacer un bucle que recorra todas las paginas de starwars ya que hay 20, y esto solo corre la primera de todas y por lo tanto solo los 50 primeros productos:
 
-
 Ya tenemos los 974 productos de la francicia de StarWars. Ahora hay que normalizarlo de todos los links que seria coger el link de la franquicia y cambiarlo en scrape_products, y cambiar tambien manualmente el numero de paginas que tenga. Lo probamos con Harry Potter:
-
-
 
 Lo que hay que intentar luego es automatizar todo el proceso que de la primera pagina de links haga el segundo proceso y el tercero y asi sabes??? pero bueno lo intentamos al final.
 
@@ -410,15 +421,14 @@ link_producto <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1
 
 ```{r}
 link_producto |> 
-  xml_find_all("//*[@id='id_divBlock_Main']/table[1]/tbody/tr[2]/td[2]/center/table/tbody/tr[1]/td/table/tbody/tr/td[1]/font/a") |> 
-  html_text()
+  xml_find_all("//a[@class='links']") |> 
+  html_text() |> 
+  head(1)
 
 ```
 
-
-
-
 aquí se accede al price guide:
+
 ```{r}
 link_producto |> 
       xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
@@ -467,12 +477,4 @@ final_result
 
 ```
 
-
-
-
-
-
-
-!!! desempaqueta el vector nombrado en columnas.
-set_names(...) asigna nombres de variable.
-mutate(...) agrega la moneda en una columna separada.
+!!! desempaqueta el vector nombrado en columnas. set_names(...) asigna nombres de variable. mutate(...) agrega la moneda en una columna separada.
