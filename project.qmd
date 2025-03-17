@@ -314,7 +314,6 @@ link_product |>
   html_text() |> 
   head(1)
 ```
-### Final function for all the products
 
 ```{r}
 scrape_years <- function(df) {
@@ -337,15 +336,118 @@ scrape_years <- function(df) {
 }
 ```
 
-
 ```{r}
 all_products <- scrape_years(all_products)
 head(all_products)
 ```
 
+### Data guide history
+
+```{r}
+library(rvest)
+
+get_price_history_links <- function(product_link) {
+  # Extraer el código del set de la URL del producto
+  product_code <- str_extract(product_link, "S=[A-Za-z0-9-]+")  # Extrae el código del set
+  if (is.na(product_code)) {
+    return(NA)
+  }
+  
+  # Verificar si el enlace ya contiene "https://"
+  price_guide_link <- sprintf("https://www.bricklink.com/catalogPG.asp?%s&ColorID=0", product_code)
+  
+  # Si el enlace ya contiene "https://", no es necesario agregarlo de nuevo
+  if (grepl("^https://", price_guide_link)) {
+    return(price_guide_link)
+  }
+  
+  # De lo contrario, concatenamos el dominio
+  return(paste0("https://www.bricklink.com", price_guide_link))
+}
+
+```
+
+```{r}
+all_products <- all_products |> 
+  mutate(price_history_link = map(Link, get_price_history_links))
+```
+
+#### Data prices history
+
+```{r}
+get_price_history_data <- function(price_history_link) {
+  
+  # Leer la página del historial de precios
+  page <- tryCatch(read_html(price_history_link), error = function(e) return(NULL))
+  
+  if (is.null(page)) {
+    return(tibble(
+      Min_Price = NA,
+      Avg_Price = NA,
+      Qty_Avg_Price = NA,
+      Max_Price = NA,
+      Currency = NA
+    ))
+  }
+  
+  # Extraer los datos usando los nuevos XPaths
+  min_price <- page %>%
+    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[3]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
+    html_text(trim = TRUE)
+  
+  avg_price <- page %>%
+    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[4]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
+    html_text(trim = TRUE)
+  
+  qty_avg_price <- page %>%
+    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[5]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
+    html_text(trim = TRUE)
+  
+  max_price <- page %>%
+    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[6]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
+    html_text(trim = TRUE)
+  
+  # Extraer la moneda (aquí puedes ajustarlo si es necesario)
+  currency <- "USD"  # Aquí puedes poner un código de moneda predeterminado o extraerlo si lo ves en la página
+  
+  # Devolver los datos como un tibble
+  tibble(
+    Min_Price = min_price,
+    Avg_Price = avg_price,
+    Qty_Avg_Price = qty_avg_price,
+    Max_Price = max_price,
+    Currency = currency
+  )
+}
+
+```
+
 ```{r}
 first_try <- all_products[1:25,]
 
-first_try <- scrape_years(first_try)
+first_try <- first_try %>%
+  rowwise() %>%
+  mutate(
+    price_data = list(get_price_history_data(price_history_link)),
+    Min_Price = price_data[[1]]$Min_Price,
+    Avg_Price = price_data[[1]]$Avg_Price,
+    Qty_Avg_Price = price_data[[1]]$Qty_Avg_Price,
+    Max_Price = price_data[[1]]$Max_Price,
+    Currency = price_data[[1]]$Currency
+  ) %>%
+  select(-price_data) 
+```
+
+
+```{r}
+first_try <- all_products[1:25,]
+
+first_try <- first_try %>% 
+  mutate(price_history = map(Link, get_price_history_links))
+```
+
+```{r}
+min_price = 
+
 ```
 
