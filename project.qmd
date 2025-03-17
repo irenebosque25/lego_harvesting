@@ -253,6 +253,13 @@ all_products <- main_categories |>
 colSums(is.na(all_products))
 ```
 
+As it can be seen, there are 402 sets that have missing values for the number of pieces. This is not an error of scraping, this is due to the fact that these products are sets of Legos that include several products in one offer. For this reason, we prefer to drop these missing cases. This would also decrease the loading time of future operations. 
+
+```{r}
+all_products <- all_products |> 
+  drop_na(Pieces)
+```
+
 Now we have all the main information for the products organized in one table. However, to proceed with further analysis, we will have to add more information about these products.
 
 ### Product prices
@@ -310,88 +317,35 @@ link_product |>
 ### Final function for all the products
 
 ```{r}
-scrape_products <- function(links, output_file, batch_size = 25) {
-  # Crear o sobrescribir el archivo CSV con las columnas adecuadas
-  write_csv(
-    tibble(Link = character(), Year = character(), Times_Sold = character(), Min_Price = character(), 
-           Avg_Price = character(), Qty_Avg_Price = character(), Max_Price = character(), Currency = character()),
-    output_file
-  )
-
-  for (i in seq(1, length(links), by = batch_size)) {
-    batch <- links[i:min(i + batch_size - 1, length(links))]  # Seleccionar batch actual
-
-    # Scrapeo y almacenamiento inmediato en CSV
-    batch_results <- map_dfr(batch, function(product_url) {
-      page <- tryCatch(read_html(product_url), error = function(e) return(NULL))
-      if (is.null(page)) return(tibble(Link = product_url, Year = NA, Times_Sold = NA, Min_Price = NA, 
-                                       Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA, Currency = NA))
-
-      ## 🔹 Extraer año del producto
+scrape_years <- function(df) {
+  df <- df %>%
+    mutate(year = map_chr(Link, function(product_url) {
+      page <- tryCatch(read_html(product_url), error = function(e) return(NA))
+      
+      if (is.na(page)) return(NA)
+      
+      # Extraer el año (primer enlace dentro de la clase 'links')
       product_year <- page %>%
         html_elements("a.links") %>%
         html_text(trim = TRUE) %>%
         head(1)
 
-      ## 🔹 Obtener el identificador del producto para construir el historial de precios
-      product_id <- str_extract(product_url, "(?<=S=)[^&]+")  # Extrae el código del set
-      if (is.na(product_id)) {
-        return(tibble(Link = product_url, Year = product_year, Times_Sold = NA, Min_Price = NA, 
-                      Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA, Currency = NA))
-      }
-
-      # Construir la URL del historial de precios
-      price_history_url <- paste0("https://www.bricklink.com/catalogPG.asp?S=", product_id, "&ColorID=0")
-
-      # Leer la página de historial de precios
-      price_page <- tryCatch(read_html(price_history_url), error = function(e) return(NULL))
-      if (is.null(price_page)) return(tibble(Link = product_url, Year = product_year, Times_Sold = NA, Min_Price = NA, 
-                                             Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA, Currency = NA))
-
-      ## 🔹 Extraer datos de ventas
-      current_items <- price_page %>%
-        xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") %>%
-        html_text(trim = TRUE)
-
-      if (length(current_items) == 0) {
-        return(tibble(Link = product_url, Year = product_year, Times_Sold = NA, Min_Price = NA, 
-                      Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA, Currency = NA))
-      }
-
-      # Extraer títulos y valores
-      titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)"))
-      values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
-
-      # Extraer la divisa
-      currency <- unique(na.omit(str_extract(values, "^[A-Z]+")))[1]
-      numeric_values <- str_extract(values, "[0-9,.]+")
-
-      # Crear tibble con los datos de ventas
-      price_data <- tibble(!!!set_names(numeric_values, titles)) %>%
-        mutate(Link = product_url, Year = product_year, Currency = currency) %>%
-        select(Link, Year, everything())  # Reordenar columnas
-
-      return(price_data)
-    })
-
-    # Guardar en CSV (append para no sobrescribir)
-    write_csv(batch_results, output_file, append = TRUE)
-
-    # Mostrar progreso
-    message(sprintf("Guardado %d/%d productos...", min(i + batch_size - 1, length(links)), length(links)))
-
-    # Pausa para evitar bloqueos
-    Sys.sleep(4)
-  }
-
-  message("✅ Proceso completado.")
+      return(product_year)
+    }))
+  
+  return(df)
 }
+```
 
+
+```{r}
+all_products <- scrape_years(all_products)
+head(all_products)
 ```
 
 ```{r}
 first_try <- all_products[1:25,]
 
-scrape_products(first_try$Link, "first_try.csv", batch_size = 25)
+first_try <- scrape_years(first_try)
 ```
 
