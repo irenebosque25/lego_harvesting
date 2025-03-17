@@ -87,7 +87,7 @@ main_categories <- data.frame(
   category_url = cat_links)
 ```
 
-Now we select only the variables that we are interested in. 
+Now we select only the variables that we are interested in.
 
 ```{r}
 all_products <- main_categories |> 
@@ -117,7 +117,7 @@ sw_pages <- sw |>
 sw_pages
 ```
 
-It can be seen that the number of pages indicated for Star Wars is 20, which is correct as this is the number of pages containing objects in this category on the website. The next step is to automate this process and apply it to the rest of the selected categories. 
+It can be seen that the number of pages indicated for Star Wars is 20, which is correct as this is the number of pages containing objects in this category on the website. The next step is to automate this process and apply it to the rest of the selected categories.
 
 ```{r}
 # Function to obtain the number of pages inside each category
@@ -146,6 +146,8 @@ main_categories <- all_products |>
 
 ### First try products of Star Wars
 
+Then, we get the number of pages that every category has and we add it to the main_categeories table . First we try for one single category (Star Wars in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories more later:
+
 ```{r}
 # Link vector
 link <- "https://www.bricklink.com/catalogList.asp?catType=S&catString=65" |>
@@ -162,11 +164,15 @@ base_url <- "https://www.bricklink.com"
 full_links <- paste0(base_url, set_links)
 ```
 
+Now we get the names of every product of the Star Wars category:
+
 ```{r}
 # Names vector
 names <- link |>
   xml_find_all("//table[@class='bg-color--white catalog-list__body-main catalog-list__body-main--alternate-row']//strong")|> html_text() 
 ```
+
+Then we get the number of pieces each product has:
 
 ```{r}
 year_pieces <- link |> 
@@ -181,6 +187,8 @@ extract_info <- function(entry) {
   return(tibble(Pieces = as.integer(pieces), Set = set))
 }
 ```
+
+Finally, we create the function that generalizes all the previous steps in order to get a table with all the information: name, piece and the link redirects us to each product link.
 
 ```{r}
 # Function to scrap the products and obtain the info
@@ -240,7 +248,7 @@ scrape_products <- function(base_url, total_pages) {
 brick_starwars <- scrape_products("https://www.bricklink.com/catalogList.asp?catType=S&catString=65", total_pages = 20)
 ```
 
-The next step consists on applying the function to the rest of the categories.
+The next step consists on applying the function to the rest of the categories, so we have a complete dataset of all the products that we will be analyzing.
 
 ```{r}
 # The rest of the categories
@@ -253,7 +261,7 @@ all_products <- main_categories |>
 colSums(is.na(all_products))
 ```
 
-As it can be seen, there are 402 sets that have missing values for the number of pieces. This is not an error of scraping, this is due to the fact that these products are sets of Legos that include several products in one offer. For this reason, we prefer to drop these missing cases. This would also decrease the loading time of future operations. 
+As it can be seen, there are 402 sets that have missing values for the number of pieces. This is not an error of scraping, this is due to the fact that these products are sets of Legos that include several products in one offer. For this reason, we prefer to drop these missing cases. This would also decrease the loading time of future operations.
 
 ```{r}
 all_products <- all_products |> 
@@ -264,6 +272,10 @@ Now we have all the main information for the products organized in one table. Ho
 
 ### Product prices
 
+As we did in the first part of the scraping process, we try to scrap first for one single product and more later we will make a function to generalize it to every product.
+
+The first thing we do in this step is to get the final hyperlynk for this specific product ,the one that has all the information about its prices.
+
 ```{r}
 link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
   read_html()
@@ -271,7 +283,11 @@ link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#
 link_product |> 
       xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
       html_attr("href")
+```
 
+Now that we got the final hyperlink, we extract the table with all the current items and prices for sale
+
+```{r}
 link_historial <- 
   "https://www.bricklink.com/catalogPG.asp?S=3219-1&ColorID=0"|> 
   read_html()
@@ -286,6 +302,8 @@ current_items <- link_historial |>
 
 current_items
 ```
+
+Then we try to clean it and put every price information in separate columns
 
 ```{r}
 # Titles and values
@@ -372,6 +390,50 @@ all_products <- all_products |>
   mutate(price_history_link = map(Link, get_price_history_links))
 ```
 
+Extraemos todos los links de el history price:
+
+```{r}
+extraer_link <- function(url) {
+  # Intentamos leer el HTML de la página
+  link_product <- tryCatch({
+    read_html(url)
+  }, error = function(e) {
+    # Si hay un error al leer la página, retornamos NA
+    return(NULL)
+  })
+  
+  # Si no conseguimos leer la página correctamente, retornamos NA
+  if (is.null(link_product)) {
+    return(NA)
+  }
+  
+  # Extraemos el enlace que buscamos
+  resultado <- link_product |> 
+    xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
+    html_attr("href")
+  
+  # Si no se encuentra el enlace, retornamos NA
+  if (length(resultado) == 0) {
+    return(NA)
+  }
+  
+  return(resultado)
+}
+
+# Aplicamos la función a cada enlace en la columna 'Link' de todo el dataset
+all_products2 <- all_products %>%
+  mutate(price_link = purrr::map_chr(Link, ~ {
+    Sys.sleep(2)  # Pausa de 2 segundos entre cada solicitud
+    extraer_link(.)
+  }))
+```
+
+Y aqui extraemos el dataset paraa no tener que volver a correr la funcion: 
+```{r}
+write.csv(all_products2, "all_products2.csv", row.names = FALSE)
+
+```
+
 #### Data prices history
 
 ```{r}
@@ -438,7 +500,6 @@ first_try <- first_try %>%
   select(-price_data) 
 ```
 
-
 ```{r}
 first_try <- all_products[1:25,]
 
@@ -451,3 +512,74 @@ min_price =
 
 ```
 
+```{r}
+# Función para extraer y limpiar los precios de un enlace de historial
+extract_price_history <- function(url) {
+  page <- read_html(url)
+  
+  # Extraer los datos de la tabla
+  current_items <- page |> 
+    xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") |> 
+    html_text()
+  
+  # Extraer títulos y valores
+  titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)") )
+  values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
+  
+  # Extraer la moneda
+  currency <- unique(na.omit(str_extract(values, "^[A-Z]+")))[1]
+  
+  # Extraer los valores numéricos
+  numeric_values <- str_extract(values, "[0-9,.]+")
+  
+  # Crear un tibble con los datos extraídos
+  result <- tibble(!!!set_names(numeric_values, titles)) |> 
+    mutate(Currency = currency)
+  
+  return(result)
+}
+
+# Aplicar la función a todas las filas de la columna price_history_link y combinar los resultados
+apply_scraping <- function(dataset) {
+  dataset_with_prices <- dataset |> 
+    rowwise() |> 
+    mutate(price_data = list(extract_price_history(price_history_link))) |> 
+    unnest(price_data)
+  
+  return(dataset_with_prices)
+}
+
+# Usar la función con tu dataset
+new_dataset <- apply_scraping(all_products)
+```
+
+```{r}
+subset_products <- head(all_products, 30)
+
+# Función para extraer el enlace de la guía de precios
+get_price_guide_link <- function(url) {
+  tryCatch({
+    page <- read_html(url)
+    link <- page %>%
+      html_nodes(xpath = "//div[@id='_idPriceGuideLink']//a") %>%
+      html_attr("href")
+    
+    # Retornar el enlace o NA si no se encuentra
+    if (length(link) > 0) {
+      return(link)
+    } else {
+      return(NA)
+    }
+  }, error = function(e) {
+    return(NA) # En caso de error, devolver NA
+  })
+}
+
+# Aplicar la función a cada fila del dataset (solo los primeros 30 productos)
+subset_products <- subset_products %>%
+  mutate(PriceGuideLink = sapply(Link, get_price_guide_link))
+
+# Guardar el nuevo dataset en un archivo CSV
+write.csv(subset_products, "subset_products.csv", row.names = FALSE)
+
+```
