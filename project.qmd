@@ -38,6 +38,7 @@ library(httr)
 library(stringr)
 library(tidyverse)
 library(tibble)
+library(readr)
 ```
 
 # Bricklink
@@ -270,6 +271,42 @@ all_products <- all_products |>
 
 Now we have all the main information for the products organized in one table. However, to proceed with further analysis, we will have to add more information about these products.
 
+### Year
+
+```{r}
+# To obtain the year of the product
+link_product |> 
+  xml_find_all("//a[@class='links']") |> 
+  html_text() |> 
+  head(1)
+```
+
+```{r}
+scrape_years <- function(df) {
+  df <- df %>%
+    mutate(year = map_chr(Link, function(product_url) {
+      page <- tryCatch(read_html(product_url), error = function(e) return(NA))
+      
+      if (is.na(page)) return(NA)
+      
+      # Extract the year (first link in that class)
+      product_year <- page %>%
+        html_elements("a.links") %>%
+        html_text(trim = TRUE) %>%
+        head(1)
+
+      return(product_year)
+    }))
+  
+  return(df)
+}
+```
+
+```{r}
+all_products <- scrape_years(all_products)
+head(all_products)
+```
+
 ### Product prices
 
 As we did in the first part of the scraping process, we try to scrap first for one single product and more later we will make a function to generalize it to every product.
@@ -323,63 +360,30 @@ final_result <- tibble(!!!set_names(numeric_values, titles)) |>
 final_result
 ```
 
-### Year
-
-```{r}
-# To obtain the year of the product
-link_product |> 
-  xml_find_all("//a[@class='links']") |> 
-  html_text() |> 
-  head(1)
-```
-
-```{r}
-scrape_years <- function(df) {
-  df <- df %>%
-    mutate(year = map_chr(Link, function(product_url) {
-      page <- tryCatch(read_html(product_url), error = function(e) return(NA))
-      
-      if (is.na(page)) return(NA)
-      
-      # Extraer el año (primer enlace dentro de la clase 'links')
-      product_year <- page %>%
-        html_elements("a.links") %>%
-        html_text(trim = TRUE) %>%
-        head(1)
-
-      return(product_year)
-    }))
-  
-  return(df)
-}
-```
-
-```{r}
-all_products <- scrape_years(all_products)
-head(all_products)
-```
-
 ### Data guide history
+
+#### Getting the guides links
 
 ```{r}
 library(rvest)
 
 get_price_history_links <- function(product_link) {
-  # Extraer el código del set de la URL del producto
-  product_code <- str_extract(product_link, "S=[A-Za-z0-9-]+")  # Extrae el código del set
+  # Extract the code of the set from the URL product
+  product_code <- str_extract(product_link, "S=[A-Za-z0-9-]+")
   if (is.na(product_code)) {
     return(NA)
   }
   
-  # Verificar si el enlace ya contiene "https://"
+  # Verify if the link already contains "https://"
   price_guide_link <- sprintf("https://www.bricklink.com/catalogPG.asp?%s&ColorID=0", product_code)
   
-  # Si el enlace ya contiene "https://", no es necesario agregarlo de nuevo
+  # If not, it is not necessary to add it
   if (grepl("^https://", price_guide_link)) {
     return(price_guide_link)
   }
+  Sys.sleep(3)
   
-  # De lo contrario, concatenamos el dominio
+  # Paste if necessary
   return(paste0("https://www.bricklink.com", price_guide_link))
 }
 
@@ -390,7 +394,7 @@ all_products <- all_products |>
   mutate(price_history_link = map(Link, get_price_history_links))
 ```
 
-Extraemos todos los links de el history price:
+Extraemos todos los links del history price:
 
 ```{r}
 extraer_link <- function(url) {
@@ -416,6 +420,7 @@ extraer_link <- function(url) {
   if (length(resultado) == 0) {
     return(NA)
   }
+  Sys.sleep(3)
   
   return(resultado)
 }
@@ -430,156 +435,190 @@ all_products2 <- all_products %>%
 
 Y aqui extraemos el dataset paraa no tener que volver a correr la funcion: 
 ```{r}
-write.csv(all_products2, "all_products2.csv", row.names = FALSE)
+all_products2 <- read_csv("all_products2.csv")
+
+colSums(is.na(all_products2))
+
+all_products_clean <- all_products2 |> 
+  drop_na(price_link) # products that were never sold
+```
+
+#### Data prices
+
+```{r}
+# URL de ejemplo (puedes reemplazarla con el link que tengas)
+url_guide <- "https://www.bricklink.com/catalogPG.asp?S=4493-1&ColorID=0"
+
+# Leer la página
+page_guide <- read_html(url_guide)
 
 ```
 
-#### Data prices history
+```{r}
+# Extraer el "Times Sold"
+times_sold <- page_guide %>% 
+  xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>% 
+  html_text(trim = TRUE)
+
+# Extraer el "Total Qty"
+total_qty <- page_guide %>%
+  xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer el "Min Price"
+min_price <- page_guide %>%
+  xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer el "Avg Price"
+avg_price <- page_guide %>%
+  xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer el "Qty Avg Price"
+qty_avg_price <- page_guide %>%
+  xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer el "Max Price"
+max_price <- page_guide %>%
+  xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+```
 
 ```{r}
-get_price_history_data <- function(price_history_link) {
+# Crear un tibble con los resultados
+results_guide <- tibble(
+  Times_Sold = times_sold,
+  Total_Qty = total_qty,
+  Min_Price = min_price,
+  Avg_Price = avg_price,
+  Qty_Avg_Price = qty_avg_price,
+  Max_Price = max_price
+)
+
+results_guide
+```
+
+Before moving to the function process, let's try with another product to see if we obtain all the data correctly.
+
+```{r}
+url_guide2 <- "https://www.bricklink.com/catalogPG.asp?S=30162-1&ColorID=0"  # Cambia este enlace por el que necesites
+
+# Leer la página
+page_guide2 <- read_html(url_guide2)
+
+# 2. Extraer los datos de la página utilizando los XPaths
+
+# Extraer Times Sold
+times_sold <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer Total Qty
+total_qty <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer Min Price
+min_price <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer Avg Price
+avg_price <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer Qty Avg Price
+qty_avg_price <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# Extraer Max Price
+max_price <- page_guide2 %>%
+  xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
+  html_text(trim = TRUE)
+
+# 3. Crear un tibble con los datos extraídos
+price_data2 <- tibble(
+  Times_Sold = times_sold,
+  Total_Qty = total_qty,
+  Min_Price = min_price,
+  Avg_Price = avg_price,
+  Qty_Avg_Price = qty_avg_price,
+  Max_Price = max_price
+)
+```
+
+#### Prices guide function
+
+```{r}
+# Contador global de productos procesados
+counter <- 0
+
+# Función modificada para manejar las pausas y guardar los datos en CSV
+history_data <- function(price_link) {
+  # Leer la página de historial de precios
+  price_history_page <- tryCatch(read_html(price_link), 
+                                 error = function(e) return(NULL))
   
-  # Leer la página del historial de precios
-  page <- tryCatch(read_html(price_history_link), error = function(e) return(NULL))
+  # Si no se puede leer la página, devolver valores NA
+  if (is.null(price_history_page)) {
+    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
+                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
+  }
+
+  # Extraer los datos utilizando XPaths específicos
+  data <- tibble(
+    Times_Sold = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Total_Qty = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Min_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Avg_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Qty_Avg_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Max_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
+      html_text(trim = TRUE)
+  )
   
-  if (is.null(page)) {
-    return(tibble(
-      Min_Price = NA,
-      Avg_Price = NA,
-      Qty_Avg_Price = NA,
-      Max_Price = NA,
-      Currency = NA
-    ))
+  # Incrementar el contador de productos
+  counter <<- counter + 1
+  
+  # Después de cada 5 productos procesados, guardar los datos en CSV
+  if (counter %% 7 == 0) {
+    Sys.sleep(5)  # Pausa larga después de cada 5 productos
+  } else {
+    Sys.sleep(runif(1, min = 3, max = 5))  # Pausa normal entre productos
   }
   
-  # Extraer los datos usando los nuevos XPaths
-  min_price <- page %>%
-    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[3]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
-    html_text(trim = TRUE)
-  
-  avg_price <- page %>%
-    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[4]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
-    html_text(trim = TRUE)
-  
-  qty_avg_price <- page %>%
-    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[5]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
-    html_text(trim = TRUE)
-  
-  max_price <- page %>%
-    xml_find_first('//*[@id="id-main-legacy-table"]/tbody/tr/td/table[3]/tbody/tr[6]/td[3]/table/tbody/tr/td/table/tbody/tr[3]/td[2]/b') %>%
-    html_text(trim = TRUE)
-  
-  # Extraer la moneda (aquí puedes ajustarlo si es necesario)
-  currency <- "USD"  # Aquí puedes poner un código de moneda predeterminado o extraerlo si lo ves en la página
-  
-  # Devolver los datos como un tibble
-  tibble(
-    Min_Price = min_price,
-    Avg_Price = avg_price,
-    Qty_Avg_Price = qty_avg_price,
-    Max_Price = max_price,
-    Currency = currency
-  )
+  return(data)
 }
 
 ```
 
 ```{r}
-first_try <- all_products[1:25,]
+first_try <- all_products_clean[1:1000,]
 
-first_try <- first_try %>%
-  rowwise() %>%
-  mutate(
-    price_data = list(get_price_history_data(price_history_link)),
-    Min_Price = price_data[[1]]$Min_Price,
-    Avg_Price = price_data[[1]]$Avg_Price,
-    Qty_Avg_Price = price_data[[1]]$Qty_Avg_Price,
-    Max_Price = price_data[[1]]$Max_Price,
-    Currency = price_data[[1]]$Currency
-  ) %>%
-  select(-price_data) 
+products1 <- first_try %>%
+  mutate(history_data = map(price_link, history_data)) 
+
+products1 <- products1 |> 
+  unnest(history_data)
 ```
 
-```{r}
-first_try <- all_products[1:25,]
-
-first_try <- first_try %>% 
-  mutate(price_history = map(Link, get_price_history_links))
-```
-
-```{r}
-min_price = 
-
-```
-
-```{r}
-# Función para extraer y limpiar los precios de un enlace de historial
-extract_price_history <- function(url) {
-  page <- read_html(url)
-  
-  # Extraer los datos de la tabla
-  current_items <- page |> 
-    xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") |> 
-    html_text()
-  
-  # Extraer títulos y valores
-  titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)") )
-  values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
-  
-  # Extraer la moneda
-  currency <- unique(na.omit(str_extract(values, "^[A-Z]+")))[1]
-  
-  # Extraer los valores numéricos
-  numeric_values <- str_extract(values, "[0-9,.]+")
-  
-  # Crear un tibble con los datos extraídos
-  result <- tibble(!!!set_names(numeric_values, titles)) |> 
-    mutate(Currency = currency)
-  
-  return(result)
-}
-
-# Aplicar la función a todas las filas de la columna price_history_link y combinar los resultados
-apply_scraping <- function(dataset) {
-  dataset_with_prices <- dataset |> 
-    rowwise() |> 
-    mutate(price_data = list(extract_price_history(price_history_link))) |> 
-    unnest(price_data)
-  
-  return(dataset_with_prices)
-}
-
-# Usar la función con tu dataset
-new_dataset <- apply_scraping(all_products)
-```
-
-```{r}
-subset_products <- head(all_products, 30)
-
-# Función para extraer el enlace de la guía de precios
-get_price_guide_link <- function(url) {
-  tryCatch({
-    page <- read_html(url)
-    link <- page %>%
-      html_nodes(xpath = "//div[@id='_idPriceGuideLink']//a") %>%
-      html_attr("href")
-    
-    # Retornar el enlace o NA si no se encuentra
-    if (length(link) > 0) {
-      return(link)
-    } else {
-      return(NA)
-    }
-  }, error = function(e) {
-    return(NA) # En caso de error, devolver NA
-  })
-}
-
-# Aplicar la función a cada fila del dataset (solo los primeros 30 productos)
-subset_products <- subset_products %>%
-  mutate(PriceGuideLink = sapply(Link, get_price_guide_link))
-
-# Guardar el nuevo dataset en un archivo CSV
-write.csv(subset_products, "subset_products.csv", row.names = FALSE)
-
-```
