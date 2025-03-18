@@ -781,8 +781,7 @@ write.csv(products1, "HarryPotter_products.csv", row.names = FALSE)
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "Star Wars") |> 
-    filter(Years == "1990") |> 
-  head(30)
+    filter(year == "1999") 
 
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
@@ -798,9 +797,9 @@ write.csv(products1, "StarWars_products.csv", row.names = FALSE)
 
 ```{r}
 first_try <- all_products_clean |> 
-  filter(category_name == "Super Mario Bros") |> 
-    filter(Years == "1990") |> 
-  head(30)
+  filter(category_name == "Super Mario") |> 
+    filter(year == "2020") |> 
+    head(20)
 
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
@@ -811,15 +810,16 @@ products1 <- products1 |>
 ```
 
 ```{r}
-write.csv(products1, "SuperMario_products.csv", row.names = FALSE)
+write.csv(products1, "SupeMario_products.csv", row.names = FALSE)
 ```
 
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "Super Heroes") |> 
-    filter(Years == "1990") |> 
-  head(30)
+    filter(year == "2012") |> 
+    head(20)
 
+unique(first_try$year)
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
 
@@ -835,8 +835,9 @@ write.csv(products1, "SuperHeroes_products.csv", row.names = FALSE)
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "Town") |> 
-    filter(Years == "1990") |> 
-  head(30)
+    filter(year == "1990") |> 
+  head(20)
+
 
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
@@ -853,8 +854,7 @@ write.csv(products1, "Town_products.csv", row.names = FALSE)
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "The Hobbit and The Lord of the Rings") |> 
-    filter(Years == "1990") |> 
-  head(30)
+    filter(year == "2012") 
 
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
@@ -865,5 +865,5 @@ products1 <- products1 |>
 ```
 
 ```{r}
-write.csv(products1, "Town_products.csv", row.names = FALSE)
+write.csv(products1, "LOTRandHobbit_products.csv", row.names = FALSE)
 ```
