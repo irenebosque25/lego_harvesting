@@ -434,12 +434,11 @@ And then we construct the function to apply it to every product:
 
 ```{r}
 scrape_years <- function(df) {
-  df <- df %>%
+  df <- df %>% # function prepared to be applied in a df
     mutate(year = map_chr(Link, function(product_url) {
       page <- tryCatch(read_html(product_url), 
                        error = function(e) return(NA))
       if (is.na(page)) return(NA)
-      
       # Extract the year (first link in that class)
       product_year <- page %>%
         html_elements("a.links") %>%
@@ -479,35 +478,30 @@ Next, we create a function that iterates through our entire dataset, extracting 
 
 ```{r}
 extraer_link <- function(url) {
-  # Intentamos leer el HTML de la página
   link_product <- tryCatch({
-    read_html(url)
+    read_html(url) #try
   }, error = function(e) {
-    # Si hay un error al leer la página, retornamos NA
     return(NULL)
   })
-  # Si no conseguimos leer la página correctamente, retornamos NA
   if (is.null(link_product)) {
     return(NA)
   }
-  # Extraemos el enlace que buscamos
-  resultado <- link_product |> 
+  # Extract the link wanted
+  result <- link_product |> 
     xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
     html_attr("href")
-  
-  # Si no se encuentra el enlace, retornamos NA
-  if (length(resultado) == 0) {
+  # We receive NA if the link is not found
+  if (length(result) == 0) {
     return(NA)
   }
   Sys.sleep(3)
-  
-  return(resultado)
+  return(result)
 }
 
-# Aplicamos la función a cada enlace en la columna 'Link' de todo el dataset
+# We apply the function to the Link column in our table
 all_products2 <- all_products %>%
   mutate(price_link = purrr::map_chr(Link, ~ {
-    Sys.sleep(2)  # Pausa de 2 segundos entre cada solicitud
+    Sys.sleep(2)  #break between every request
     extraer_link(.)
   }))
 ```
@@ -553,40 +547,41 @@ url_guide <- "https://www.bricklink.com/catalogPG.asp?S=4493-1&ColorID=0"
 page_guide <- read_html(url_guide)
 ```
 
+After reading the html, we can extract the data that we wanted following the XPaths located in the first table: "*Last 6 Months Sales: New*". The data that we can extract from this table are the following: times sold, total quantity, min price, avg price, avg quantity price and max price. The difference between *times sold* and *total quantity* is that *times sold* focuses on the number of transactions in which the product was included; on the other hand, *total quantity* reflects the actual number of pieces of that item that have changed hands, regardless of the number of transactions. 
 ```{r}
-# Extraer el "Times Sold"
+# Times Sold
 times_sold <- page_guide %>% 
   xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>% 
   html_text(trim = TRUE)
 
-# Extraer el "Total Qty"
+# Total Qty
 total_qty <- page_guide %>%
   xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer el "Min Price"
+# Min Price
 min_price <- page_guide %>%
   xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer el "Avg Price"
+# Avg Price
 avg_price <- page_guide %>%
   xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer el "Qty Avg Price"
+# Qty Avg Price
 qty_avg_price <- page_guide %>%
   xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer el "Max Price"
+# Max Price
 max_price <- page_guide %>%
   xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
   html_text(trim = TRUE)
 
 ```
 
-Next step was to create a tibble with all the information extracted.
+Next step is to create a tibble with all the information extracted.
 
 ```{r}
 # Tibble with the results
@@ -650,29 +645,26 @@ price_data2 <- tibble(
   Max_Price = max_price)
 ```
 
-After numerous attempts, we confirmed that the method we had developed was the only one that worked reliably across all links. Other approaches we tried were only partially effective, as each link followed a slightly different structure, making it difficult to apply a single extraction strategy across the entire dataset.
+We confirmed after numerous attempts that the method we had developed was the only one that worked reliably across all links. Other approaches we tried were only partially effective, as each link followed a slightly different structure, making it difficult to apply a single extraction strategy across the entire dataset.
 
 #### Prices guide function
 
-After finally determining the correct process for extracting the table, we proceeded to create a function that would generalize this method for every product. It’s important to note that we implemented a well-structured Sys.sleep system, where every seven products, the script pauses for exactly five seconds, and for the rest, it introduces a randomized pause of 3 to 5 seconds between each request.
+After finally determining the correct process for extracting the table, we proceeded to create a function that would generalize this method for every product. It is important to note that we implemented a well-structured *Sys.sleep system*. In this system, the script pauses every seven products for exactly five seconds. For the rest, it introduces a randomized pause of 3 to 5 seconds between each request.
 
 ```{r}
-# Contador global de productos procesados
+# Global counter of products
 counter <- 0
 
-# Función modificada para manejar las pausas y guardar los datos en CSV
+# Modified function
 history_data <- function(price_link) {
-  # Leer la página de historial de precios
-  price_history_page <- tryCatch(read_html(price_link), 
+  price_history_page <- tryCatch(read_html(price_link), #price guide history
                                  error = function(e) return(NULL))
-  
-  # Si no se puede leer la página, devolver valores NA
+  # If we can not read the link, we obtain NAs
   if (is.null(price_history_page)) {
     return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
   }
-
-  # Extraer los datos utilizando XPaths específicos
+  # Extract the data
   data <- tibble(
     Times_Sold = price_history_page %>%
       xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
@@ -698,23 +690,20 @@ history_data <- function(price_link) {
       xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
       html_text(trim = TRUE)
   )
-  
-  # Incrementar el contador de productos
+  # Increase the products counter
   counter <<- counter + 1
-  
-  # Después de cada 5 productos procesados, guardar los datos en CSV
+  # Pauses
   if (counter %% 7 == 0) {
-    Sys.sleep(5)  # Pausa larga después de cada 5 productos
+    Sys.sleep(5)# longer breaks
   } else {
-    Sys.sleep(runif(1, min = 3, max = 5))  # Pausa normal entre productos
+    Sys.sleep(runif(1, min = 3, max = 5)) # normal pause
   }
-  
   return(data)
 }
 
 ```
 
-Before running the function on our entire dataset of over 3,000 products, we decided to first test it on the first 20 products.
+Before running the function on our entire data set of over 3,000 products, we decided to first test it on the first 20 products.
 
 ```{r}
 first_try <- all_products_clean[1:20,]
@@ -732,15 +721,15 @@ We confirmed that this was not the problem when, upon running the function again
 
 To address this issue, we developed a new function with reinforced security measures. After conducting further research, we discovered several strategies that could enhance our web scraping security and help us avoid getting blocked.
 
-First, to avoid detection, the code randomizes the User-Agent with each request. Websites often track User-Agents to identify automated traffic, so using a fixed one could easily trigger anti-bot mechanisms. Instead, the script includes a list of different User-Agents, mimicking requests from various browsers (Windows, Mac, Linux). Before each request, it randomly selects one, making it look as if different users are accessing the site.
+First, to avoid detection, the code randomizes the *User-Agent* with each request. Websites often track *User-Agents* to identify automated traffic, so using a fixed one could easily trigger anti-bot mechanisms. Instead, the script includes a list of different *User-Agents*, mimicking requests from various browsers (Windows, Mac, Linux). Before each request, it randomly selects one, making it look as if different users are accessing the site.
 
-Additionally, the script adds custom headers, including "Accept-Language" to simulate real browsing behavior and "Referer", making it seem like the request is coming from Google. These small details help make the requests appear more legitimate and reduce the risk of detection.
+Additionally, the script adds custom headers, including *Accept-Language* to simulate real browsing behavior and *Referer*, making it seem like the request is coming from Google. These small details help make the requests appear more legitimate and reduce the risk of detection.
 
-To further increase stealth, sessions and cookies are handled using html_session(). Unlike a simple request with read_html(), this approach allows the scraper to maintain cookies, just like a real user browsing a site. Some websites track sessions to differentiate bots from humans, so this step helps blend in.
+To further increase stealth, sessions and cookies are handled using *html_session()*. Unlike a simple request with *read_html()*, this approach allows the scraper to maintain cookies, just like a real user browsing a site. Some websites track sessions to differentiate bots from humans, so this step helps blend in.
 
-A key defensive mechanism in the script is the error handling with tryCatch(). Instead of stopping execution when an error occurs (for example, if a request is blocked or the page fails to load), tryCatch() ensures that the function gracefully handles the issue. If a request fails, the script returns NA values and moves on to the next product. This prevents the scraper from breaking due to temporary access issues.
+A key defensive mechanism in the script is the error handling with *tryCatch()*. Instead of stopping execution when an error occurs (for example, if a request is blocked or the page fails to load), *tryCatch()* ensures that the function gracefully handles the issue. If a request fails, the script returns NA values and moves on to the next product. This prevents the scraper from breaking due to temporary access issues.
 
-Moreover, if the website returns a CAPTCHA or an access restriction, the script automatically saves the blocked HTML response into a file ("error_page.html") for later inspection. This helps analyze whether the site is serving CAPTCHAs, blocking requests, or requiring login credentials.
+Moreover, if the website returns a CAPTCHA or an access restriction, the script automatically saves the blocked HTML response into a file ("*error_page.html*") for later inspection. This helps analyze whether the site is serving CAPTCHAs, blocking requests, or requiring LogIn credentials.
 
 Finally, randomized delays between requests help avoid bot detection. Instead of making rapid, predictable requests (which would be a clear sign of automation), the script introduces pauses between 10 and 15 seconds after each request, and every 7 products, it waits even longer—between 20 and 30 seconds. This mimics natural human browsing patterns, making the scraper much harder to detect.
 
@@ -832,13 +821,11 @@ While at first, it seemed to work correctly, when we expanded the process to 50 
 
 After attempting this process countless times, on different computers and using various approaches, we found that there was only one reliable way to make the function work:
 
-We had to run the function on just the first 20 products of each category while changing the VPN to a different country every time we executed the script.
+We had to run the function on just the first 15 products of each category while changing the VPN to a different country every time we executed the script. This method was the only way to bypass the website's detection and successfully extract the price data without getting blocked.
 
-This method was the only way to bypass the website's detection and successfully extract the price data without getting blocked.
+With this in mind, we optimized the selection of 15 products per category to ensure we obtained the most useful information for our analysis. To achieve this, we applied a filtering strategy:
 
-With this in mind, we optimized the selection of 20 products per category to ensure we obtained the most useful information for our analysis. To achieve this, we applied a filtering strategy:
-
-For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.This approach allowed us to focus on the most relevant and historically significant products, maximizing the value of the extracted data while still working within the website's restrictions.
+For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020. This approach allowed us to focus on the most relevant and historically significant products, maximizing the value of the extracted data while still working within the website's restrictions.
 
 ```{r}
 pieces_category <- all_products |> 
@@ -969,7 +956,15 @@ Thanks to all the data collected and stored in the previous sections, we can pro
 ```{r}
 brick <- read_csv("data/final_brick.csv")
 
-lego <- read_csv("data/lego_official.csv") |> 
+brick <- brick |> 
+  mutate(avg_price = as.numeric(avg_price),
+            pieces = as.numeric(pieces))
+
+lego <- read_csv("data/lego_official.csv")
+
+lego <- lego |> 
+  mutate(Price = as.numeric(Price),
+         PieceCount = as.numeric(PieceCount)) |> 
   clean_names()
 ```
 
@@ -983,10 +978,25 @@ category_colors <- c(
   "Super Heroes" = "#3182BD", 
   "Disney" = "#9467BD")
 
+theme_custom <- theme_minimal() +
+  theme(
+    axis.text.x = element_text(size=10, face="bold", color="gray20"),
+    axis.text.y = element_text(size=10, face="bold", color="gray20"),
+    axis.title = element_text(size=12, face="bold"),
+    plot.title = element_text(size=14, face="bold", hjust=0.5),
+    panel.grid.major = element_line(color="gray85"),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+    )
+```
+
+
+```{r}
 p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name, 
                         group = category_name)) +
-  geom_line(linewidth = 0.85) +  # Líneas por categoría
+  geom_line(linewidth = 0.85) +  # Lines grouped by category
   geom_point() +
+  xlim(2000, 2020) +
   labs(title = "Evolution of pieces per category",
        x = "Year",
        y = "Number of pieces",
@@ -1002,5 +1012,170 @@ p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name,
     legend.background = element_rect(color = "black", size = 0.5))
 
 p1
+```
+
+```{r}
+lego <- lego |> 
+    mutate(franchise = case_when(
+      franchise == "City" ~ "Town",
+      franchise == "Lord of the Rings" ~ 
+           "The Hobbit and The Lord of the Rings",
+      franchise == "Marvel" ~ "Super Heroes",
+         TRUE ~ franchise
+       ))|> 
+      rename(category_name = franchise)
+```
+
+
+```{r}
+# Defining the pieces categories
+bins <- c(0, 500, 1000, 2000, 3000, 5000, 10000)
+
+labels <- c("0-500", "501-1000", "1001-2000", "2001-3000", "3001-5000", "5001+")
+
+brick$piece_category <- cut(brick$pieces, 
+                                  breaks = bins, 
+                                  labels = labels, right = TRUE)
+lego$piece_category <- cut(lego$piece_count, 
+                                    breaks = bins, 
+                                    labels = labels, right = TRUE)
+```
+
+```{r}
+resales <- brick |> 
+     group_by(category_name, piece_category) |> 
+     summarise(
+         Avg_Resale_Price = mean(avg_price, na.rm = TRUE),
+         Avg_Min_Resale_Price = mean(min_price, na.rm = TRUE),
+         Avg_Max_Resale_Price = mean(max_price, na.rm = TRUE))
+
+actual_prices <- lego |> 
+  group_by(piece_category, category_name) |> 
+  summarise(Avg_Current_Price = mean(price, na.rm = TRUE))
+
+comparison_pieces <- left_join(resales, actual_prices, 
+                               by = c("piece_category", "category_name"))
+```
+
+
+```{r}
+# Boxplot of maximum resale prices
+
+p2 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Max_Resale_Price, FUN=median),
+                 y=Avg_Max_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Max Price",
+                 x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p2
+```
+
+
+```{r}
+# Boxplot of minimum resale prices
+
+p3 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Min_Resale_Price, FUN=median),
+                 y=Avg_Min_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Min Price",
+                   x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p3
+```
+
+
+```{r}
+# Boxplot of average resale prices
+
+p4 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Resale_Price, FUN=median),
+                 y=Avg_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Avg Price",
+                   x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p4
+```
+
+
+```{r}
+comparison_pieces$ROI <- ((comparison_pieces$Avg_Resale_Price -
+                             comparison_pieces$Avg_Current_Price)/ 
+                            comparison_pieces$Avg_Current_Price)*100
+
+df_sorted <- comparison_pieces |> 
+  drop_na(ROI) |>
+  group_by(category_name) |> 
+  summarise(ROI = mean(ROI)) |> 
+  arrange(desc(ROI)) |>
+  filter(!category_name =="The Hobbit and The Lord of the Rings")
+```
+
+
+```{r}
+p5 <- ggplot(df_sorted, 
+             aes(x=reorder(category_name, ROI), y=ROI, fill=ROI)) +
+  geom_bar(stat="identity", width=0.6, color="black") +
+  scale_fill_gradient(low="yellow", high="red4") +
+  scale_y_continuous(limits = c(0, 130)) +
+  labs(title="Profitability (ROI) of LEGO by franchise",
+       subtitle="Comparing the actual and resale products by pieces",
+       x="Franchise", y="ROI (%)") +
+  coord_flip() +  # Graph flipped
+  geom_text(aes(label=sprintf("%.1f%%", ROI)), 
+            hjust=-0.2, size=4.5, fontface="bold") +
+  theme_custom
+
+p5
+```
+
+```{r}
+# Shiny and plotly interactive graph
+ui <- fluidPage(
+  titlePanel("Products per category, prices and pieces"),
+  verticalLayout(
+      selectInput("x_var", 
+                  label = "Select the variable for the X axis:", 
+                  choices = c("Min price", "Max price", "Avg price"),
+                  selected = "Min price"),
+      plotlyOutput("scatter_plot", height = "600px")))
+
+# Server for the app
+server <- function(input, output) {
+  
+  output$scatter_plot <- renderPlotly({
+    # Dynamic selection based on the data
+    plot_data <- brick %>%
+      mutate(variable = case_when(
+        input$x_var == "Min price" ~ min_price,
+        input$x_var == "Max price" ~ max_price,
+        input$x_var == "Avg price" ~ avg_price))
+
+    # We create the interactive graph
+    p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
+                 mode = 'markers', color = ~category_name, 
+                 text = ~name, colors = category_colors,
+                 hoverinfo = 'text+x+y') #show name, x and y values
+    
+    p })}
+
+shinyApp(ui = ui, server = server)
 ```
 
