@@ -39,6 +39,8 @@ library(stringr)
 library(tidyverse)
 library(tibble)
 library(readr)
+library(janitor)
+
 ```
 
 # Bricklink
@@ -189,7 +191,7 @@ extract_info <- function(entry) {
 }
 ```
 
-Finally, we create the function that generalizes all the previous steps in order to get a table with all the information: name, piece and the link redirects us to each product link.
+Finally, we create the function that generalizes all the previous steps in order to get a table with all the information: name, piece and the link that redirects us to each product link.
 
 ```{r}
 # Function to scrap the products and obtain the info
@@ -273,14 +275,20 @@ Now we have all the main information for the products organized in one table. Ho
 
 ### Year
 
+We also need to have the year that the product was released in order to have the older years of every category to make the comparison.
+
+We first learn how to do it in just one product:
 ```{r}
 # To obtain the year of the product
+
+
 link_product |> 
   xml_find_all("//a[@class='links']") |> 
   html_text() |> 
   head(1)
 ```
 
+And then we construct the function to apply it to every product:
 ```{r}
 scrape_years <- function(df) {
   df <- df %>%
@@ -303,20 +311,19 @@ scrape_years <- function(df) {
 ```
 
 ```{r}
-all_products <- scrape_years(all_products)
+years_products <- scrape_years(all_products)
 head(all_products)
 ```
 
+After just one hour we have every product with every year and all the pieces in one dataset
+
 ```{r}
-write.csv(all_products, "years_products.csv", row.names = FALSE)
+write.csv(years_products, "years_products.csv", row.names = FALSE)
 ```
 
+### Getting the price links
 
-### Product prices
-
-As we did in the first part of the scraping process, we try to scrap first for one single product and more later we will make a function to generalize it to every product.
-
-The first thing we do in this step is to get the final hyperlynk for this specific product ,the one that has all the information about its prices.
+Next thing to do is extract the finalhyperlink that has all the information about prices. This is the process for just one link:
 
 ```{r}
 link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}" |> 
@@ -327,79 +334,7 @@ link_product |>
       html_attr("href")
 ```
 
-Now that we got the final hyperlink, we extract the table with all the current items and prices for sale
-
-```{r}
-link_historial <- 
-  "https://www.bricklink.com/catalogPG.asp?S=3219-1&ColorID=0"|> 
-  read_html()
-
-link_historial |> 
-  xml_find_all("//table[@class='fv']//td[@valign='TOP']") |> 
-  html_text()
-
-current_items <- link_historial |> 
-  xml_find_all("(//table[@class='fv']//td[@valign='TOP'])[3]") |> # the number 3 indicates the number of the table that we want. In this case, current items for sale.
-  html_text()
-
-current_items
-```
-
-Then we try to clean it and put every price information in separate columns
-
-```{r}
-# Titles and values
-titles <- unlist(str_extract_all(current_items, "[A-Za-z ]+(?=:)"))
-values <- unlist(str_extract_all(current_items, "(?<=:)\\s*[A-Z]*\\s*[0-9.,]+"))
-
-# Extract the currency
-currency <- unique(na.omit(str_extract(values, "^[A-Z]+")))[1]
-
-# Numerical values
-numeric_values <- str_extract(values, "[0-9,.]+")
-
-# Tibble with the data extracted
-final_result <- tibble(!!!set_names(numeric_values, titles)) |> 
-  mutate(Currency = currency) # column for the currency
-
-final_result
-```
-
-### Data guide history
-
-#### Getting the guides links
-
-```{r}
-library(rvest)
-
-get_price_history_links <- function(product_link) {
-  # Extract the code of the set from the URL product
-  product_code <- str_extract(product_link, "S=[A-Za-z0-9-]+")
-  if (is.na(product_code)) {
-    return(NA)
-  }
-  
-  # Verify if the link already contains "https://"
-  price_guide_link <- sprintf("https://www.bricklink.com/catalogPG.asp?%s&ColorID=0", product_code)
-  
-  # If not, it is not necessary to add it
-  if (grepl("^https://", price_guide_link)) {
-    return(price_guide_link)
-  }
-  Sys.sleep(3)
-  
-  # Paste if necessary
-  return(paste0("https://www.bricklink.com", price_guide_link))
-}
-
-```
-
-```{r}
-all_products <- all_products |> 
-  mutate(price_history_link = map(Link, get_price_history_links))
-```
-
-Extraemos todos los links del history price:
+Next, we create a function that iterates through our entire dataset, extracting and adding each new link to a newly created column called price_link. This ensures that every product in our dataset is associated with its corresponding price history link.
 
 ```{r}
 extraer_link <- function(url) {
@@ -436,29 +371,39 @@ all_products2 <- all_products %>%
     Sys.sleep(2)  # Pausa de 2 segundos entre cada solicitud
     extraer_link(.)
   }))
+
+
+#write.csv(all_products2, "all_products2.csv", row.names = FALSE)
+#all_products2 <- read_csv("all_products2.csv")
 ```
 
-Y aqui extraemos el dataset paraa no tener que volver a correr la funcion:
+Once we have successfully extracted and stored all the links, we proceed to merge both datasets. The first dataset (years_products) contains detailed information about the products, including their names and associated years, while the second dataset holds all the extracted price history links.
 
 ```{r}
-all_products2 <- read_csv("all_products2.csv")
-
-colSums(is.na(all_products2))
-
-all_products <- all_products |> 
+#we select the column Name thata is the reference column to join both datasets and the year column that is the one we don't have in the new dataset
+years_products <- years_products |> 
   select(Name, year)
 
-all_products3 <- all_products |> 
+#we join by name
+
+all_products <- years_products |> 
   left_join(all_products2, by="Name")
-
-all_products_clean <- all_products3 |> 
-  drop_na(price_link) 
-
-
-
 ```
 
-#### Data prices
+After merging the datasets, the next step is to check for any missing values (NA) in the newly created price_link column. These missing values indicate products that do not have a recorded price history. Since these products lack relevant data for our analysis, we remove them from the dataset to maintain data integrity and ensure accurate results.
+
+```{r}
+colSums(is.na(all_products2))
+
+all_products_clean <- all_products |> 
+  drop_na(price_link) 
+```
+
+### Product prices
+
+The next step in the process was to extract the price data from the final hyperlink. Without a doubt, this was the most challenging part of the entire project, as retrieving the price information without getting blocked by the website proved to be nearly impossible. What follows is a detailed explanation of our approach and the steps we took to obtain the necessary data while attempting to bypass the website’s restrictions.
+
+As always, we began by testing a single link to understand the process required to extract the price data. The table we aimed to retrieve contained key price-related information, including the minimum, maximum, and average prices of each product that was currently on sale and categorized as completely new. Additionally, it included details such as the total number of times the product had been sold and the total quantity sold. 
 
 ```{r}
 # URL de ejemplo (puedes reemplazarla con el link que tengas)
@@ -502,6 +447,8 @@ max_price <- page_guide %>%
 
 ```
 
+Next step was to create a tibble with all the information extracted.
+
 ```{r}
 # Crear un tibble con los resultados
 results_guide <- tibble(
@@ -516,7 +463,7 @@ results_guide <- tibble(
 results_guide
 ```
 
-Before moving to the function process, let's try with another product to see if we obtain all the data correctly.
+Before proceeding with the full-function implementation, we decided to test another product to verify whether we could consistently extract all the necessary data.
 
 ```{r}
 url_guide2 <- "https://www.bricklink.com/catalogPG.asp?S=30162-1&ColorID=0"  # Cambia este enlace por el que necesites
@@ -567,7 +514,11 @@ price_data2 <- tibble(
 )
 ```
 
+After numerous attempts, we confirmed that the method we had developed was the only one that worked reliably across all links. Other approaches we tried were only partially effective, as each link followed a slightly different structure, making it difficult to apply a single extraction strategy across the entire dataset.
+
 #### Prices guide function
+
+After finally determining the correct process for extracting the table, we proceeded to create a function that would generalize this method for every product. It’s important to note that we implemented a well-structured Sys.sleep system, where every seven products, the script pauses for exactly five seconds, and for the rest, it introduces a randomized pause of 3 to 5 seconds between each request.
 
 ```{r}
 # Contador global de productos procesados
@@ -627,6 +578,8 @@ history_data <- function(price_link) {
 
 ```
 
+Before running the function on our entire dataset of over 3,000 products, we decided to first test it on the first 20 products.
+
 ```{r}
 first_try <- all_products_clean[1:20,]
 
@@ -636,15 +589,23 @@ products1 <- first_try %>%
 products1 <- products1 |> 
   unnest(history_data)
 ```
+This is when the real nightmare began. During our initial trials, the function worked perfectly for the first three products, but for the rest, it returned only NA values. At first, we assumed the issue was related to how we were extracting the data, but when we manually tested random individual links, the scraping script worked 100% of the time.
 
-```{r}
-link <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3342-1#T=S&O={%22iconly%22:0}" |> 
-  read_html()
+We confirmed that this was not the problem when, upon running the function again, it only worked for five products. On the third attempt, it didn’t work for any products at all. This led us to conclude that the website was actively blocking our requests after detecting too many in a short period, even with the sophisticated Sys.sleep system we had in place.
 
-link |> 
-  xml_find_all("//tr[@class='pciItemHeader']//td[@width='90px']") |> 
-  html_text()
-```
+To address this issue, we developed a new function with reinforced security measures. After conducting further research, we discovered several strategies that could enhance our web scraping security and help us avoid getting blocked.
+
+First, to avoid detection, the code randomizes the User-Agent with each request. Websites often track User-Agents to identify automated traffic, so using a fixed one could easily trigger anti-bot mechanisms. Instead, the script includes a list of different User-Agents, mimicking requests from various browsers (Windows, Mac, Linux). Before each request, it randomly selects one, making it look as if different users are accessing the site.
+
+Additionally, the script adds custom headers, including "Accept-Language" to simulate real browsing behavior and "Referer", making it seem like the request is coming from Google. These small details help make the requests appear more legitimate and reduce the risk of detection.
+
+To further increase stealth, sessions and cookies are handled using html_session(). Unlike a simple request with read_html(), this approach allows the scraper to maintain cookies, just like a real user browsing a site. Some websites track sessions to differentiate bots from humans, so this step helps blend in.
+
+A key defensive mechanism in the script is the error handling with tryCatch(). Instead of stopping execution when an error occurs (for example, if a request is blocked or the page fails to load), tryCatch() ensures that the function gracefully handles the issue. If a request fails, the script returns NA values and moves on to the next product. This prevents the scraper from breaking due to temporary access issues.
+
+Moreover, if the website returns a CAPTCHA or an access restriction, the script automatically saves the blocked HTML response into a file ("error_page.html") for later inspection. This helps analyze whether the site is serving CAPTCHAs, blocking requests, or requiring login credentials.
+
+Finally, randomized delays between requests help avoid bot detection. Instead of making rapid, predictable requests (which would be a clear sign of automation), the script introduces pauses between 10 and 15 seconds after each request, and every 7 products, it waits even longer—between 20 and 30 seconds. This mimics natural human browsing patterns, making the scraper much harder to detect.
 
 ```{r}
 # Contador global de productos procesados
@@ -656,9 +617,6 @@ user_agents <- c(
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0"
 )
-
-# Opcional: Proxy para evitar bloqueos (descomentar si lo necesitas)
-# proxy_url <- "http://usuario:contraseña@proxy_ip:puerto"
 
 # Función optimizada para evitar bloqueos
 history_data <- function(price_link) {
@@ -675,11 +633,9 @@ history_data <- function(price_link) {
   # Crear una sesión con cookies y User-Agent
   session <- tryCatch(html_session(price_link, headers), error = function(e) return(NULL))
 
-  # Manejo de proxies (descomentar si usas proxy)
-  # session <- tryCatch(html_session(price_link, headers, use_proxy(proxy_url)), error = function(e) return(NULL))
 
   if (is.null(session)) {
-    print("Error al iniciar la sesión. Probablemente bloqueado.")
+    print("Error in log in. Probably blocked.")
     return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
   }
@@ -689,7 +645,7 @@ history_data <- function(price_link) {
 
   # Si la página está bloqueada o devuelve CAPTCHA, guardar HTML para revisión
   if (is.null(price_history_page)) {
-    print("Página bloqueada o CAPTCHA detectado. Guardando HTML...")
+    print("Page blocked or CAPTCHA detected. Saving HTML...")
     writeLines(as.character(session), "error_page.html")
     return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
@@ -732,17 +688,55 @@ history_data <- function(price_link) {
     pause_time <- runif(1, min = 10, max = 15)  # Pausa normal más larga
   }
   
-  print(paste("Esperando", round(pause_time, 2), "segundos antes del próximo request..."))
+  print(paste("Waiting", round(pause_time, 2), "seconds before next request..."))
   Sys.sleep(pause_time)
   
   return(data)
 }
 ```
 
+After creating the new function, we tested it again on the first 20 products.
+
+```{r}
+first_try <- all_products_clean[1:20,]
+
+products1 <- first_try %>%
+  mutate(history_data = map(price_link, history_data)) 
+
+products1 <- products1 |> 
+  unnest(history_data)
+```
+
+While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: the function only managed to extract data for the first three products before the website blocked further requests.
+
+After attempting this process countless times, on different computers and using various approaches, we found that there was only one reliable way to make the function work:
+
+We had to run the function on just the first 20 products of each category while changing the VPN to a different country every time we executed the script.
+
+This method was the only way to bypass the website's detection and successfully extract the price data without getting blocked.
+
+With this in mind, we optimized the selection of 20 products per category to ensure we obtained the most useful information for our analysis. To achieve this, we applied a filtering strategy:
+
+For each category, we selected the 20 products with the highest quantity available while also ensuring that they were from before 2020.This approach allowed us to focus on the most relevant and historically significant products, maximizing the value of the extracted data while still working within the website's restrictions.
+
+```{r}
+pieces_category <- all_products |> 
+  filter(year <= 2020) |> 
+  group_by(category_name) |>         
+  slice_max(order_by = Pieces, n = 15, with_ties = FALSE) %>% 
+  ungroup()
+```
+
+
+
+
+
+
+
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "Disney") |> 
-  filter(year == "2000"|year == "2014"|year == "2017") |> 
+  order(Pieces)
   head(20)
 
 products1 <- first_try %>%
@@ -763,9 +757,7 @@ disneyp <- read_csv("Disney_products.csv")
 
 ```{r}
 first_try <- all_products_clean |> 
-  filter(category_name == "Harry Potter") |> 
-  filter(year == "2001"|year == "2002") |> 
-  head(20)
+  filter(category_name == "Harry Potter") 
 
 products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
