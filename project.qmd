@@ -42,7 +42,8 @@ library(tidyverse)
 library(tibble)
 library(readr)
 library(janitor)
-
+library(shiny)
+library(plotly)
 ```
 
 ## LEGO website
@@ -193,7 +194,7 @@ official_lego <- bind_rows(
   lego_jurassic, lego_lotr, lego_marvel, 
   lego_starwars, lego_supermario)
 
-official_lego <- official_lego |> #The Nas are not LEGO sets
+official_lego <- official_lego |> #the Nas are not LEGO sets
   drop_na (PieceCount)
 ```
 
@@ -762,50 +763,39 @@ Moreover, if the website returns a CAPTCHA or an access restriction, the script 
 Finally, randomized delays between requests help avoid bot detection. Instead of making rapid, predictable requests (which would be a clear sign of automation), the script introduces pauses between 10 and 15 seconds after each request, and every 7 products, it waits even longer—between 20 and 30 seconds. This mimics natural human browsing patterns, making the scraper much harder to detect.
 
 ```{r}
-# Contador global de productos procesados
-counter <- 0
-
-# Lista de User-Agents para rotar
+# User-agents to rotate and not being blocked
 user_agents <- c(
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0"
-)
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0")
 
-# Función optimizada para evitar bloqueos
+counter <- 0 # To count the number of products and then do a larger pause each 7 products scrapped
+
 history_data <- function(price_link) {
-  # Seleccionar un User-Agent aleatorio
-  random_user_agent <- sample(user_agents, 1)
+  random_user_agent <- sample(user_agents, 1) # random user
   
-  # Headers para simular navegador real
   headers <- add_headers(
     "User-Agent" = random_user_agent,
-    "Accept-Language" = "en-US,en;q=0.9",
+    "Accept-Language" = "en-US,en;q=0.9", # simulate a real browser
     "Referer" = "https://google.com"
-  )
-
-  # Crear una sesión con cookies y User-Agent
-  session <- tryCatch(html_session(price_link, headers), error = function(e) return(NULL))
-
-
+    )
+  # create a log in with cookier and user-agent
+  session <- tryCatch(html_session(price_link, headers), 
+                      error = function(e) return(NULL))
   if (is.null(session)) {
-    print("Error in log in. Probably blocked.")
+    print("Error logging in. Probably blocked.")
     return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
   }
-  
-  # Intentar leer el HTML de la página
-  price_history_page <- tryCatch(read_html(session), error = function(e) return(NULL))
-
-  # Si la página está bloqueada o devuelve CAPTCHA, guardar HTML para revisión
-  if (is.null(price_history_page)) {
-    print("Page blocked or CAPTCHA detected. Saving HTML...")
+  price_history_page <- tryCatch(read_html(session), 
+                                 error = function(e) return(NULL))
+  if (is.null(price_history_page)) { # read the html
+    print("Page blocked or CAPTCHA detected")
     writeLines(as.character(session), "error_page.html")
     return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
   }
-  
-  # Extraer datos con XPaths
+  # Data from Xpaths
   data <- tibble(
     Times_Sold = price_history_page %>%
       xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
@@ -829,22 +819,17 @@ history_data <- function(price_link) {
     
     Max_Price = price_history_page %>%
       xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
-      html_text(trim = TRUE)
-  )
+      html_text(trim = TRUE))
   
-  # Incrementar el contador de productos
-  counter <<- counter + 1
-  
-  # Pausas con mayor variabilidad para evitar bloqueos
+  counter <<- counter + 1 # product count
   if (counter %% 7 == 0) {
-    pause_time <- runif(1, min = 20, max = 30)  # Pausa más larga cada 7 productos
+    pause_time <- runif(1, min = 20, max = 30) # longer pause every 7
   } else {
-    pause_time <- runif(1, min = 10, max = 15)  # Pausa normal más larga
+    pause_time <- runif(1, min = 10, max = 15) # normal pause
   }
-  
-  print(paste("Waiting", round(pause_time, 2), "seconds before next request..."))
+  print(paste("Waiting", 
+              round(pause_time, 2), "seconds before the next request..."))
   Sys.sleep(pause_time)
-  
   return(data)
 }
 ```
@@ -871,7 +856,7 @@ This method was the only way to bypass the website's detection and successfully 
 
 With this in mind, we optimized the selection of 20 products per category to ensure we obtained the most useful information for our analysis. To achieve this, we applied a filtering strategy:
 
-For each category, we selected the 20 products with the highest quantity available while also ensuring that they were from before 2020.This approach allowed us to focus on the most relevant and historically significant products, maximizing the value of the extracted data while still working within the website's restrictions.
+For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.This approach allowed us to focus on the most relevant and historically significant products, maximizing the value of the extracted data while still working within the website's restrictions.
 
 ```{r}
 pieces_category <- all_products |> 
@@ -881,127 +866,159 @@ pieces_category <- all_products |>
   ungroup()
 ```
 
+Once we have the 15 products with the most number of pieces per each category, we have to apply the function to each category selected and then obtain the prices wanted.
+
 ```{r}
-first_try <- all_products_clean |> 
+# Harry Potter
+products_hp <- pieces_category |> 
+  filter(category_name == "Harry Potter") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products1 <- products_hp |> 
+  unnest(history_data)
+
+# Disney
+products_dis <- pieces_category |> 
   filter(category_name == "Disney") |> 
-  order(Pieces)
-  head(20)
-
-products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
 
-products1 <- products1 |> 
+products2 <- products_dis |> 
   unnest(history_data)
-```
 
-```{r}
-write.csv(products1, "Disney_products.csv", row.names = FALSE)
-```
-
-```{r}
-disneyp <- read_csv("Disney_products.csv")
-```
-
-```{r}
-first_try <- all_products_clean |> 
-  filter(category_name == "Harry Potter") 
-
-products1 <- first_try %>%
-  mutate(history_data = map(price_link, history_data)) 
-
-products1 <- products1 |> 
-  unnest(history_data)
-```
-
-```{r}
-write.csv(products1, "HarryPotter_products.csv", row.names = FALSE)
-```
-
-```{r}
-first_try <- all_products_clean |> 
+# Star Wars
+products_sw <- pieces_category |> 
   filter(category_name == "Star Wars") |> 
-    filter(year == "1999") 
-
-products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
 
-products1 <- products1 |> 
-  unnest(history_data)
-```
-
-```{r}
-write.csv(products1, "StarWars_products.csv", row.names = FALSE)
-```
-
-```{r}
-first_try <- all_products_clean |> 
-  filter(category_name == "Super Mario") |> 
-    filter(year == "2020") |> 
-    head(20)
-
-products1 <- first_try %>%
-  mutate(history_data = map(price_link, history_data)) 
-
-products1 <- products1 |> 
+products3 <- products_sw |> 
   unnest(history_data)
 
-```
-
-```{r}
-write.csv(products1, "SupeMario_products.csv", row.names = FALSE)
-```
-
-```{r}
-first_try <- all_products_clean |> 
-  filter(category_name == "Super Heroes") |> 
-    filter(year == "2012") |> 
-    head(20)
-
-unique(first_try$year)
-products1 <- first_try %>%
-  mutate(history_data = map(price_link, history_data)) 
-
-products1 <- products1 |> 
-  unnest(history_data)
-
-```
-
-```{r}
-write.csv(products1, "SuperHeroes_products.csv", row.names = FALSE)
-```
-
-```{r}
-first_try <- all_products_clean |> 
-  filter(category_name == "Town") |> 
-    filter(year == "1990") |> 
-  head(20)
-
-
-products1 <- first_try %>%
-  mutate(history_data = map(price_link, history_data)) 
-
-products1 <- products1 |> 
-  unnest(history_data)
-
-```
-
-```{r}
-write.csv(products1, "Town_products.csv", row.names = FALSE)
-```
-
-```{r}
-first_try <- all_products_clean |> 
+# LOTR
+products_lotr <- pieces_category |> 
   filter(category_name == "The Hobbit and The Lord of the Rings") |> 
-    filter(year == "2012") 
-
-products1 <- first_try %>%
   mutate(history_data = map(price_link, history_data)) 
 
-products1 <- products1 |> 
+products4 <- products_lotr |> 
   unnest(history_data)
 
+# Town
+products_town <- pieces_category |> 
+  filter(category_name == "Town") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products5 <- products_town |> 
+  unnest(history_data)
+
+# Super Mario
+products_sm <- pieces_category |> 
+  filter(category_name == "Super Mario") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products6 <- products_sm |> 
+  unnest(history_data)
+
+# Super Heroes (Marvel & DC)
+products_sh <- pieces_category |> 
+  filter(category_name == "Super Heroes") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products7 <- products_sh |> 
+  unnest(history_data)
+```
+
+We were finally able to extract the data correctly, although we have to switch the VPN every time we want to scrape a new category. Now we have the data separated, so the next step should be to merge them into a single data set.
+
+```{r}
+final_products <- bind_rows(products1, products2, products3, products4, 
+                         products5, products6, products7)
+
+final_products <- final_products |> 
+  clean_names()
+```
+
+As it can be seen, the different currencies are inside the prices measures. We have to extract this currencies and then transform the price data to numeric format.
+
+```{r}
+final_products <- final_products |> 
+  mutate(
+    currency = str_extract(min_price, "^[A-Za-z]+"), # Extract the currency
+    min_price = as.numeric(str_replace_all(
+      str_extract(min_price, "[0-9,.]+"), ",", "")), 
+    avg_price = as.numeric(str_replace_all(
+      str_extract(avg_price, "[0-9,.]+"), ",", "")),
+    qty_avg_price = as.numeric(str_replace_all(
+      str_extract(qty_avg_price, "[0-9,.]+"), ",", "")),  
+    max_price = as.numeric(str_replace_all(
+      str_extract(max_price, "[0-9,.]+"), ",", ""))) 
+# then we remove it from the rest
+```
+
+As it can be seen, the data is now presented in different currencies and we only want the EUR to compare different sets and categories. Hence, we have to select the official exchange rates obtained from the [European Central Bank](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html). These reference rates are usually updated at around 16:00 CET every working day so these values are only an approximation.
+
+```{r}
+exchange_rates <- c(
+  "EUR" = 1,      # 1 EUR = 1 EUR
+  "ILS" = 4.00,   # 1 ILS ≈ 0.25 EUR
+  "GBP" = 0.85,   # 1 GBP ≈ 1.18 EUR
+  "US"  = 1.08,   # 1 USD ≈ 0.93 EUR
+  "ROL" = 4.97    # 1 ROL ≈ 0.20 EUR
+)
+
+final_products <- final_products |> 
+  mutate(
+    exchange_rate = exchange_rates[currency],  # Exchange rate based on the currency
+    min_price = min_price / exchange_rate,
+    avg_price = avg_price / exchange_rate,
+    qty_avg_price = qty_avg_price / exchange_rate,
+    max_price = max_price / exchange_rate) |> 
+  select(-currency, -exchange_rate)
+```
+
+Now we have every price measure transformed into Euro currency. Therefore, we can already save this data in a csv file.
+
+```{r}
+write.csv(final_products, "data/final_brick.csv", row.names = FALSE)
+```
+
+## Analysis
+
+Thanks to all the data collected and stored in the previous sections, we can proceed with our final price analysis. To do this, we start by reading the final .csv documents, although we may already have them loaded in the environment. 
+
+```{r}
+brick <- read_csv("data/final_brick.csv")
+
+lego <- read_csv("data/lego_official.csv") |> 
+  clean_names()
 ```
 
 ```{r}
-write.csv(products1, "LOTRandHobbit_products.csv", row.names = FALSE)
+category_colors <- c(
+  "Star Wars" = "black",
+  "Super Mario" = "#D62728",
+  "Harry Potter" = "#FF7F0E",
+  "Town" = "#7F7F7F",
+  "The Hobbit and The Lord of the Rings" = "#2CA02C",
+  "Super Heroes" = "#3182BD", 
+  "Disney" = "#9467BD")
+
+p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name, 
+                        group = category_name)) +
+  geom_line(linewidth = 0.85) +  # Líneas por categoría
+  geom_point() +
+  labs(title = "Evolution of pieces per category",
+       x = "Year",
+       y = "Number of pieces",
+       color = "Category:") +
+  scale_color_manual(values = category_colors) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.title = element_text(size=10, face = "bold"),
+    title = element_text(size=14, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.background = element_rect(color = "black", size = 0.5))
+
+p1
 ```
+
