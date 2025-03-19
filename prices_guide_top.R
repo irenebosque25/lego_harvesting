@@ -241,18 +241,13 @@ final_products <- final_products |>
 write.csv(final_products, "data/final_brick.csv", row.names = FALSE)
 
 ui <- fluidPage(
-  titlePanel("Visualización de Productos por Categoría"),
-  sidebarLayout(
-    sidebarPanel(
+  titlePanel("Products per category, prices and pieces"),
+  verticalLayout(
       selectInput("x_var", 
                   label = "Select the variable for the X axis:", 
                   choices = c("min_price", "max_price", "avg_price"),
-                  selected = "min_price")),
-    mainPanel(
-      plotlyOutput("scatter_plot")
-    )
-  )
-)
+                  selected = "min_price"),
+      plotlyOutput("scatter_plot", height = "600px")))
 
 # Servidor para la aplicación
 server <- function(input, output) {
@@ -263,22 +258,13 @@ server <- function(input, output) {
       mutate(variable = case_when(
         input$x_var == "min_price" ~ min_price,
         input$x_var == "max_price" ~ max_price,
-        input$x_var == "avg_price" ~ avg_price
-      ))
+        input$x_var == "avg_price" ~ avg_price))
     
     # Crear gráfico con plotly
-    p <- plot_ly(plot_data, 
-                 x = ~variable, 
-                 y = ~pieces, 
-                 type = 'scatter', 
-                 mode = 'markers', 
-                 color = ~category, 
-                 text = ~product_name,  # Mostrar el nombre del producto al pasar el cursor
+    p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
+                 mode = 'markers', color = ~category_name, text = ~name,  # Mostrar el nombre del producto al pasar el cursor
                  hoverinfo = 'text+x+y') # Mostrar nombre, valor X y Y en el tooltip
-    
-    p  # Retornar el gráfico
-  })
+    p })
 }
 
-# Ejecutar la aplicación Shiny
 shinyApp(ui = ui, server = server)
