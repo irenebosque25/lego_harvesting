@@ -2,7 +2,7 @@
 
 An R-based web scraping project to extract designed to extract historical price data from [BrickLink](https://www.bricklink.com/v2/main.page) a popular marketplace for [LEGO](https://www.lego.com/es-es) sets and pieces and the official [LEGO](https://www.lego.com/es-es) website.
 
-Our primary motivation for undertaking this project was to explore the factors that drive the revaluation of LEGO sets, to analyse how their prices change over time, and to identify which sets offer the highest return on investment. With these results, we can discover patterns that influence the desirability and long-term value of certain sets. As well as their possible adaptation to similar projects.
+Our primary motivation for undertaking this project was to explore the factors that drive the revaluation of LEGO sets, to analyse how their prices change over time, and to identify which sets offer the highest return on investment. With these results, we can discover patterns that influence the desirability and long-term value of certain sets. It can also be used as a possible adaptation to similar projects.
 
 ## 📋 Requirements
 
