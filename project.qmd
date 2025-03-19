@@ -1,11 +1,13 @@
 ---
 title: "DATA HARVESTING PROJECT"
 author: Irene Bosque and Pablo Aísa
-format: html
+format:
+  html:
+    theme: united
 editor: visual
 ---
 
-# Introduction
+## Introduction
 
 In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (citar). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
 
@@ -43,7 +45,159 @@ library(janitor)
 
 ```
 
-# Bricklink
+## LEGO website
+
+```{r}
+
+disney <- "https://www.lego.com/es-es/themes/disney"
+
+disney <- disney |> 
+  read_html()
+
+prices <- disney |> 
+  xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
+  html_text() 
+
+prices <- gsub(",", ".", prices)
+prices <- str_replace(prices, "\\s?€$", "") |> 
+  as.numeric()
+
+prices
+```
+
+```{r}
+titles <- disney |> 
+  xml_find_all("//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
+  xml_children() |> 
+  html_text()
+
+titles
+```
+
+```{r}
+pieces <- disney |> 
+  xml_find_all("//span[@data-test='product-leaf-piece-count-label']")|>
+  html_text() |> 
+  as.numeric()
+
+pieces
+```
+
+```{r}
+# Function for LEGO Disney data
+extract_lego_data <- function(base_url, max_pages = 4) {
+  
+  # List to store the results
+    lego_list <- list()  
+  
+  for (page_num in 1:max_pages) {
+    page_url <- paste0(base_url, "?page=", page_num, "&offset=0")
+    page <- read_html(page_url)
+    
+    # Extract the blocks of each product
+    product_nodes <- page |> 
+    xml_find_all("//article[@class='ProductLeaf_wrapper__H0TCb ']")  
+    
+    # Extract the information of each block/product
+    titles <- product_nodes |> 
+      xml_find_first(".//a[contains(@class, 'ProductLeaf_title')]") |> 
+      html_text()
+    
+    prices <- product_nodes |> 
+      xml_find_all("//div[@class='ProductLeaf_priceRow__RUx3P']") |> 
+      html_text() 
+    
+    prices <- gsub(",", ".", prices)
+    prices <- str_replace(prices, "\\s?€$", "") |> 
+      as.numeric()
+    
+    pieces <- product_nodes |> 
+      xml_find_first(
+        ".//span[@data-test='product-leaf-piece-count-label']") |> 
+      html_text() |> 
+      as.numeric()
+    
+    # Create a temporal dataframe
+    lego_page <- tibble(
+      Title = titles,
+      Price = prices,
+      PieceCount = pieces
+    )
+    
+    # Store the results
+    lego_list[[page_num]] <- lego_page
+    Sys.sleep(2)
+  }
+  
+  # Combine all pages in a single dataframe
+  lego_data <- bind_rows(lego_list)
+  
+  return(lego_data)
+}
+```
+
+### Categories wanted
+
+```{r}
+# Disney
+url_disney <- "https://www.lego.com/es-es/themes/disney"
+lego_disney <- extract_lego_data(url_disney, max_pages = 4) |> 
+  mutate("Franchise"= "Disney")
+```
+
+```{r}
+#Harry Potter
+url_harryp <- "https://www.lego.com/es-es/themes/harry-potter"
+lego_harryp <- extract_lego_data(url_harryp, max_pages = 4)|> 
+  mutate("Franchise"= "Harry Potter")
+```
+
+```{r}
+#Star Wars
+url_starwars <- "https://www.lego.com/es-es/themes/star-wars"
+lego_starwars <- extract_lego_data(url_starwars, max_pages = 6)|> 
+  mutate("Franchise"= "Star Wars")
+```
+
+```{r}
+#Super Mario
+url_supermario <- "https://www.lego.com/es-es/themes/super-mario"
+lego_supermario <- extract_lego_data(url_supermario, max_pages = 2)|> 
+  mutate("Franchise"= "Super Mario")
+```
+
+```{r}
+#Lord of the Rings
+url_rings<- "https://www.lego.com/es-es/themes/lord-of-the-rings"
+lego_lotr <- extract_lego_data(url_rings, max_pages = 2)|> 
+  mutate("Franchise"= "Lord of the Rings")
+```
+
+```{r}
+#Marvel
+url_marvel <- "https://www.lego.com/es-es/themes/marvel"
+lego_marvel <- extract_lego_data(url_marvel, max_pages = 4)|> 
+  mutate("Franchise"= "Marvel")
+```
+
+```{r}
+#City/Town
+url_city <-"https://www.lego.com/es-es/themes/city"
+lego_city <- extract_lego_data(url_city, max_pages = 5)|> 
+  mutate("Franchise"= "City")
+```
+
+```{r}
+official_lego <- bind_rows(
+  lego_disney, lego_city, lego_harryp, 
+  lego_jurassic, lego_lotr, lego_marvel, 
+  lego_starwars, lego_supermario)
+
+official_lego <- official_lego |> #The Nas are not LEGO sets
+  drop_na (PieceCount)
+```
+
+## Bricklink
 
 We begin the web scraping process for BrickLink, aiming to create a structured dataset containing all the products to be analyzed. Our objective is to extract key variables, including price, release year, and franchise affiliation.
 
@@ -59,7 +213,7 @@ Price Guide – Current Listings: The fourth hyperlink leads to the "Current Ite
 
 To construct our final dataset, we need to sequentially scrape each of these four hyperlinks. We will develop a function that systematically navigates through each of them, extracting relevant data at each stage until we obtain the complete dataset.
 
-## Categories selected
+### Categories selected
 
 With these in mind, the first step in this process is to create a table with all categories available in the web and each link that leads to the second hyperlink with the Category-Specific Product Listings. We, then, filter for the specific categories we are interested in:
 
@@ -104,7 +258,6 @@ Then, we get the number of pages that every category has and we add it to the ma
 
 ```{r}
 # First try only with Star Wars sets
-
 sw_link <- main_categories |> 
   filter(category_name == "Star Wars") |> 
   select(category_url) |> 
@@ -145,9 +298,9 @@ main_categories <- all_products |>
   mutate(n_pages = sapply(category_url, sets_pages))
 ```
 
-## Product data
+### Product data
 
-### First try products of Star Wars
+#### First try products of Star Wars
 
 Then, we get the number of pages that every category has and we add it to the main_categeories table . First we try for one single category (Star Wars in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories more later:
 
@@ -273,11 +426,12 @@ all_products <- all_products |>
 
 Now we have all the main information for the products organized in one table. However, to proceed with further analysis, we will have to add more information about these products.
 
-### Year
+#### Year
 
 We also need to have the year that the product was released in order to have the older years of every category to make the comparison.
 
 We first learn how to do it in just one product:
+
 ```{r}
 # To obtain the year of the product
 
@@ -289,6 +443,7 @@ link_product |>
 ```
 
 And then we construct the function to apply it to every product:
+
 ```{r}
 scrape_years <- function(df) {
   df <- df %>%
@@ -380,12 +535,11 @@ all_products2 <- all_products %>%
 Once we have successfully extracted and stored all the links, we proceed to merge both datasets. The first dataset (years_products) contains detailed information about the products, including their names and associated years, while the second dataset holds all the extracted price history links.
 
 ```{r}
-#we select the column Name thata is the reference column to join both datasets and the year column that is the one we don't have in the new dataset
+# We select the column Name that is the reference column to join both datasets and the year column that is the one we don't have in the new dataset
 years_products <- years_products |> 
   select(Name, year)
 
-#we join by name
-
+# Joining by name
 all_products <- years_products |> 
   left_join(all_products2, by="Name")
 ```
@@ -399,11 +553,11 @@ all_products_clean <- all_products |>
   drop_na(price_link) 
 ```
 
-### Product prices
+#### Product prices
 
 The next step in the process was to extract the price data from the final hyperlink. Without a doubt, this was the most challenging part of the entire project, as retrieving the price information without getting blocked by the website proved to be nearly impossible. What follows is a detailed explanation of our approach and the steps we took to obtain the necessary data while attempting to bypass the website’s restrictions.
 
-As always, we began by testing a single link to understand the process required to extract the price data. The table we aimed to retrieve contained key price-related information, including the minimum, maximum, and average prices of each product that was currently on sale and categorized as completely new. Additionally, it included details such as the total number of times the product had been sold and the total quantity sold. 
+As always, we began by testing a single link to understand the process required to extract the price data. The table we aimed to retrieve contained key price-related information, including the minimum, maximum, and average prices of each product that was currently on sale and categorized as completely new. Additionally, it included details such as the total number of times the product had been sold and the total quantity sold.
 
 ```{r}
 # URL de ejemplo (puedes reemplazarla con el link que tengas)
@@ -411,7 +565,6 @@ url_guide <- "https://www.bricklink.com/catalogPG.asp?S=4493-1&ColorID=0"
 
 # Leer la página
 page_guide <- read_html(url_guide)
-
 ```
 
 ```{r}
@@ -589,6 +742,7 @@ products1 <- first_try %>%
 products1 <- products1 |> 
   unnest(history_data)
 ```
+
 This is when the real nightmare began. During our initial trials, the function worked perfectly for the first three products, but for the rest, it returned only NA values. At first, we assumed the issue was related to how we were extracting the data, but when we manually tested random individual links, the scraping script worked 100% of the time.
 
 We confirmed that this was not the problem when, upon running the function again, it only worked for five products. On the third attempt, it didn’t work for any products at all. This led us to conclude that the website was actively blocking our requests after detecting too many in a short period, even with the sophisticated Sys.sleep system we had in place.
@@ -727,12 +881,6 @@ pieces_category <- all_products |>
   ungroup()
 ```
 
-
-
-
-
-
-
 ```{r}
 first_try <- all_products_clean |> 
   filter(category_name == "Disney") |> 
@@ -753,7 +901,6 @@ write.csv(products1, "Disney_products.csv", row.names = FALSE)
 ```{r}
 disneyp <- read_csv("Disney_products.csv")
 ```
-
 
 ```{r}
 first_try <- all_products_clean |> 
@@ -785,7 +932,6 @@ products1 <- products1 |>
 ```{r}
 write.csv(products1, "StarWars_products.csv", row.names = FALSE)
 ```
-
 
 ```{r}
 first_try <- all_products_clean |> 
