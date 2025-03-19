@@ -9,7 +9,7 @@ editor: visual
 
 ## Introduction
 
-In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (citar). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
+In recent years, LEGO sets have evolved from being mere children's toys to highly sought-after investment assets. A study by the Higher School of Economics in Moscow revealed that the value of retired LEGO sets has increased by an average of 11% annually, outperforming many conventional investments since they appreciate in value faster than gold, stocks, or traditional bonds (Dobrynskaya & Kishilova, 2022). Factors such as exclusivity, franchise popularity, and set rarity directly influence their resale price, making LEGO an unexpected yet lucrative investment niche.
 
 This project aims to explore the factors driving the revaluation of LEGO sets, analyzing how their prices change over time and identifying which sets offer the greatest return on investment. By examining historical and current market data, we seek to uncover patterns that influence a set’s desirability and long-term worth.
 
@@ -48,8 +48,9 @@ library(plotly)
 
 ## LEGO website
 
-```{r}
+Let's start the scraping process with the official Lego website. We hope that it will not be necessary to use an API in order to extract the information we want. From all the available categories and sets, we first select those containing the *Disney* label. 
 
+```{r}
 disney <- "https://www.lego.com/es-es/themes/disney"
 
 disney <- disney |> 
@@ -122,15 +123,13 @@ extract_lego_data <- function(base_url, max_pages = 4) {
     lego_page <- tibble(
       Title = titles,
       Price = prices,
-      PieceCount = pieces
-    )
+      PieceCount = pieces)
     
     # Store the results
     lego_list[[page_num]] <- lego_page
     Sys.sleep(2)
   }
-  
-  # Combine all pages in a single dataframe
+  # Combine all pages in a single df
   lego_data <- bind_rows(lego_list)
   
   return(lego_data)
@@ -200,26 +199,23 @@ official_lego <- official_lego |> #the Nas are not LEGO sets
 
 ## Bricklink
 
-We begin the web scraping process for BrickLink, aiming to create a structured dataset containing all the products to be analyzed. Our objective is to extract key variables, including price, release year, and franchise affiliation.
+We begin the web scraping process for BrickLink, aiming to create a structured dataset containing all the products to be analyzed. Our objective is to extract key variables, including price, release year, and franchise affiliation. To achieve this, we need to scrape four different hyperlinks within the same website:
 
-To achieve this, we need to scrape four different hyperlinks within the same website:
+- Main Category Page: The first hyperlink leads to a table listing all LEGO categories available on BrickLink. This includes the franchises we want to compare, such as Star Wars, Super Mario, and others.
 
-Main Category Page: The first hyperlink leads to a table listing all LEGO categories available on BrickLink. This includes the franchises we want to compare, such as Star Wars, Super Mario, and others.
+- Category-Specific Product Listings: Clicking on any franchise category takes us to a second hyperlink, which displays all products belonging to that category. This page provides details such as product names, associated LEGO sets, and the number of pieces each product contains.
 
-Category-Specific Product Listings: Clicking on any franchise category takes us to a second hyperlink, which displays all products belonging to that category. This page provides details such as product names, associated LEGO sets, and the number of pieces each product contains.
+- Individual Product Details: By selecting a specific product, we are redirected to a third hyperlink that contains additional information, including the year the product was released. On this page, we also find an option labeled *View Price Guide*, which leads us to the final crucial dataset.
 
-Individual Product Details: By selecting a specific product, we are redirected to a third hyperlink that contains additional information, including the year the product was released. On this page, we also find an option labeled "View Price Guide", which directs us to the final crucial dataset.
+- Price Guide – Last 6 Months Sales: The fourth hyperlink leads to the *Current Items for Sale: New* table, which is particularly important for our analysis. This table contains market data on products that were sold within the last 6 months, including variables such as the total quantity of sales of this product, its average price and its maximum price.
 
-Price Guide – Current Listings: The fourth hyperlink leads to the "Current Items for Sale: New" table, which is particularly important for our analysis. This table contains real-time market data on new products currently available, including variables such as the total quantity of sales of this product, its average price and its maximum price
-
-To construct our final dataset, we need to sequentially scrape each of these four hyperlinks. We will develop a function that systematically navigates through each of them, extracting relevant data at each stage until we obtain the complete dataset.
+To construct our final dataset, we need to sequentially scrape each of these four hyperlinks. We will develop a function that systematically navigates through each of them, extracting relevant data at each stage until we obtain the complete table.
 
 ### Categories selected
 
-With these in mind, the first step in this process is to create a table with all categories available in the web and each link that leads to the second hyperlink with the Category-Specific Product Listings. We, then, filter for the specific categories we are interested in:
+With these in mind, the first step in this process is to create a table with all categories available in the web and each link that leads to the second hyperlink with the *Category-Specific Product Listings*. We, then, filter for the specific categories we are interested in:
 
 ```{r}
-
 brick <- "https://www.bricklink.com/catalogTree.asp?itemType=S"
 brick <- read_html(brick)
 
@@ -248,14 +244,13 @@ main_categories <- data.frame(
 Now we select only the variables that we are interested in.
 
 ```{r}
-all_products <- main_categories |> 
+main_categories <- main_categories |> 
   filter(category_name %in% c("Town", "Disney", "Harry Potter", 
-                              "Jurassic Park", 
                               "The Hobbit and The Lord of the Rings", 
                             "Super Heroes", "Star Wars", "Super Mario"))
 ```
 
-Then, we get the number of pages that every category has and we add it to the main_categeories table . First we try for one single category (Star Wars in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories more later:
+Then, we get the number of pages that every category has and we add it to the *main_categories* table . First we try for one single category (*Star Wars* in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories later:
 
 ```{r}
 # First try only with Star Wars sets
@@ -274,7 +269,7 @@ sw_pages <- sw |>
 sw_pages
 ```
 
-It can be seen that the number of pages indicated for Star Wars is 20, which is correct as this is the number of pages containing objects in this category on the website. The next step is to automate this process and apply it to the rest of the selected categories.
+It can be seen that the number of pages indicated for Star Wars is 20, which is correct as this is the number of pages containing products in this category on the website. The next step is to automate this process and apply it to the rest of the selected categories.
 
 ```{r}
 # Function to obtain the number of pages inside each category
@@ -289,21 +284,18 @@ sets_pages <- function(url) {
   if (length(pages) == 0 || is.na(pages)) {
     pages <- 1
   }
-  
-  Sys.sleep(3)
-  
+  Sys.sleep(3) #avoid overloading the website
   return(pages)
 }
 
-main_categories <- all_products |> 
+# All the categories
+main_categories <- main_categories |> 
   mutate(n_pages = sapply(category_url, sets_pages))
 ```
 
 ### Product data
 
 #### First try products of Star Wars
-
-Then, we get the number of pages that every category has and we add it to the main_categeories table . First we try for one single category (Star Wars in this case) to know which is the procedure to get the number of pages and then we create the function to apply it to the other categories more later:
 
 ```{r}
 # Link vector
@@ -360,13 +352,11 @@ scrape_products <- function(base_url, total_pages) {
   all_sets <- c()
   
   for (page in 1:total_pages) {
-    
     if (page == 1) {
       page_url <- base_url # First page
     } else {
       page_url <- sprintf(paged_url, page)  # the rest
     }
-    
     link <- read_html(page_url)
     
     # Links
@@ -395,7 +385,6 @@ scrape_products <- function(base_url, total_pages) {
     all_sets <- c(all_sets, cleaned_data$Set)
   }
   Sys.sleep(2)
-  
   # Final df
   tibble(Name = all_names, Link = all_links, 
          Pieces = all_pieces, Set = all_sets)
@@ -435,8 +424,6 @@ We first learn how to do it in just one product:
 
 ```{r}
 # To obtain the year of the product
-
-
 link_product |> 
   xml_find_all("//a[@class='links']") |> 
   html_text() |> 
@@ -449,8 +436,8 @@ And then we construct the function to apply it to every product:
 scrape_years <- function(df) {
   df <- df %>%
     mutate(year = map_chr(Link, function(product_url) {
-      page <- tryCatch(read_html(product_url), error = function(e) return(NA))
-      
+      page <- tryCatch(read_html(product_url), 
+                       error = function(e) return(NA))
       if (is.na(page)) return(NA)
       
       # Extract the year (first link in that class)
@@ -458,10 +445,8 @@ scrape_years <- function(df) {
         html_elements("a.links") %>%
         html_text(trim = TRUE) %>%
         head(1)
-
       return(product_year)
     }))
-  
   return(df)
 }
 ```
@@ -471,10 +456,10 @@ years_products <- scrape_years(all_products)
 head(all_products)
 ```
 
-After just one hour we have every product with every year and all the pieces in one dataset
+After almost an hour we have each product with each year and all the parts in one dataset. We can save it in a .csv document in order not to lose the whole process.
 
 ```{r}
-write.csv(years_products, "years_products.csv", row.names = FALSE)
+# write.csv(years_products, "years_products.csv", row.names = FALSE)
 ```
 
 ### Getting the price links
@@ -501,12 +486,10 @@ extraer_link <- function(url) {
     # Si hay un error al leer la página, retornamos NA
     return(NULL)
   })
-  
   # Si no conseguimos leer la página correctamente, retornamos NA
   if (is.null(link_product)) {
     return(NA)
   }
-  
   # Extraemos el enlace que buscamos
   resultado <- link_product |> 
     xml_find_all("//div[@id='_idPriceGuideLink']//a") |> 
@@ -527,13 +510,16 @@ all_products2 <- all_products %>%
     Sys.sleep(2)  # Pausa de 2 segundos entre cada solicitud
     extraer_link(.)
   }))
+```
 
+It looks like we have all the links scraped correctly. We can also save this table and not lose the progress.
 
+```{r}
 #write.csv(all_products2, "all_products2.csv", row.names = FALSE)
 #all_products2 <- read_csv("all_products2.csv")
 ```
 
-Once we have successfully extracted and stored all the links, we proceed to merge both datasets. The first dataset (years_products) contains detailed information about the products, including their names and associated years, while the second dataset holds all the extracted price history links.
+Once we have successfully extracted and stored all the links, we proceed with the merging of both datasets. The first dataset (*years_products*) contains detailed information about the products, including their names and associated years, while the second dataset holds all the extracted price history links.
 
 ```{r}
 # We select the column Name that is the reference column to join both datasets and the year column that is the one we don't have in the new dataset
@@ -561,10 +547,9 @@ The next step in the process was to extract the price data from the final hyperl
 As always, we began by testing a single link to understand the process required to extract the price data. The table we aimed to retrieve contained key price-related information, including the minimum, maximum, and average prices of each product that was currently on sale and categorized as completely new. Additionally, it included details such as the total number of times the product had been sold and the total quantity sold.
 
 ```{r}
-# URL de ejemplo (puedes reemplazarla con el link que tengas)
+# First try URL
 url_guide <- "https://www.bricklink.com/catalogPG.asp?S=4493-1&ColorID=0"
 
-# Leer la página
 page_guide <- read_html(url_guide)
 ```
 
@@ -604,15 +589,14 @@ max_price <- page_guide %>%
 Next step was to create a tibble with all the information extracted.
 
 ```{r}
-# Crear un tibble con los resultados
+# Tibble with the results
 results_guide <- tibble(
   Times_Sold = times_sold,
   Total_Qty = total_qty,
   Min_Price = min_price,
   Avg_Price = avg_price,
   Qty_Avg_Price = qty_avg_price,
-  Max_Price = max_price
-)
+  Max_Price = max_price)
 
 results_guide
 ```
@@ -620,52 +604,50 @@ results_guide
 Before proceeding with the full-function implementation, we decided to test another product to verify whether we could consistently extract all the necessary data.
 
 ```{r}
-url_guide2 <- "https://www.bricklink.com/catalogPG.asp?S=30162-1&ColorID=0"  # Cambia este enlace por el que necesites
-
-# Leer la página
+# Other link
+url_guide2 <- "https://www.bricklink.com/catalogPG.asp?S=30162-1&ColorID=0" 
 page_guide2 <- read_html(url_guide2)
 
-# 2. Extraer los datos de la página utilizando los XPaths
+# Extract data through XPaths
 
-# Extraer Times Sold
+# Times Sold
 times_sold <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer Total Qty
+# Total Qty
 total_qty <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer Min Price
+# Min Price
 min_price <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer Avg Price
+# Avg Price
 avg_price <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer Qty Avg Price
+# Qty Avg Price
 qty_avg_price <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# Extraer Max Price
+# Max Price
 max_price <- page_guide2 %>%
   xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
   html_text(trim = TRUE)
 
-# 3. Crear un tibble con los datos extraídos
+# Second tibble
 price_data2 <- tibble(
   Times_Sold = times_sold,
   Total_Qty = total_qty,
   Min_Price = min_price,
   Avg_Price = avg_price,
   Qty_Avg_Price = qty_avg_price,
-  Max_Price = max_price
-)
+  Max_Price = max_price)
 ```
 
 After numerous attempts, we confirmed that the method we had developed was the only one that worked reliably across all links. Other approaches we tried were only partially effective, as each link followed a slightly different structure, making it difficult to apply a single extraction strategy across the entire dataset.
