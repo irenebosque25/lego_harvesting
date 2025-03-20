@@ -48,7 +48,9 @@ library(plotly)
 
 ## LEGO website
 
-Let's start the scraping process with the official Lego website. We hope that it will not be necessary to use an API in order to extract the information we want. From all the available categories and sets, we first select those containing the *Disney* label. 
+Let's start the scraping process with the official Lego website. First thing we do is try to scrape just one link of one specific category and then construct a function and apply it to the other categories we are interested in.
+
+This first code is to extract the prices from every product of the first page of the Disney franquise:
 
 ```{r}
 disney <- "https://www.lego.com/es-es/themes/disney"
@@ -67,6 +69,8 @@ prices <- str_replace(prices, "\\s?€$", "") |>
 prices
 ```
 
+Then the name of each product of this same page:
+
 ```{r}
 titles <- disney |> 
   xml_find_all("//a[@class='ds-body-md-medium ProductLeaf_title__1UhfJ ']") |> 
@@ -76,6 +80,8 @@ titles <- disney |>
 titles
 ```
 
+And finally the code to extract the number of pieces of each product:
+
 ```{r}
 pieces <- disney |> 
   xml_find_all("//span[@data-test='product-leaf-piece-count-label']")|>
@@ -84,6 +90,8 @@ pieces <- disney |>
 
 pieces
 ```
+
+Next, we create the function that automatizes this process, and then apply every link of every category to the function
 
 ```{r}
 # Function for LEGO Disney data
@@ -138,6 +146,8 @@ extract_lego_data <- function(base_url, max_pages = 4) {
 
 ### Categories wanted
 
+The categories/franchises chosen for this study based on relevance are Disney, Harry Potter, Star Wars, Super Mario Bros, Marvel and the City theme one.
+
 ```{r}
 # Disney
 url_disney <- "https://www.lego.com/es-es/themes/disney"
@@ -187,13 +197,15 @@ lego_city <- extract_lego_data(url_city, max_pages = 5)|>
   mutate("Franchise"= "City")
 ```
 
+Finally we converge all the categories to have all the products of the lego web in one dataset:
+
 ```{r}
 official_lego <- bind_rows(
   lego_disney, lego_city, lego_harryp, 
-  lego_jurassic, lego_lotr, lego_marvel, 
+  lego_lotr, lego_marvel, 
   lego_starwars, lego_supermario)
 
-official_lego <- official_lego |> #the Nas are not LEGO sets
+official_lego <- official_lego |> #the Nas are not LEGO sets but keychains or teddies
   drop_na (PieceCount)
 ```
 
@@ -201,13 +213,13 @@ official_lego <- official_lego |> #the Nas are not LEGO sets
 
 We begin the web scraping process for BrickLink, aiming to create a structured dataset containing all the products to be analyzed. Our objective is to extract key variables, including price, release year, and franchise affiliation. To achieve this, we need to scrape four different hyperlinks within the same website:
 
-- Main Category Page: The first hyperlink leads to a table listing all LEGO categories available on BrickLink. This includes the franchises we want to compare, such as Star Wars, Super Mario, and others.
+-   Main Category Page: The first hyperlink leads to a table listing all LEGO categories available on BrickLink. This includes the franchises we want to compare, such as Star Wars, Super Mario, and others.
 
-- Category-Specific Product Listings: Clicking on any franchise category takes us to a second hyperlink, which displays all products belonging to that category. This page provides details such as product names, associated LEGO sets, and the number of pieces each product contains.
+-   Category-Specific Product Listings: Clicking on any franchise category takes us to a second hyperlink, which displays all products belonging to that category. This page provides details such as product names, associated LEGO sets, and the number of pieces each product contains.
 
-- Individual Product Details: By selecting a specific product, we are redirected to a third hyperlink that contains additional information, including the year the product was released. On this page, we also find an option labeled *View Price Guide*, which leads us to the final crucial dataset.
+-   Individual Product Details: By selecting a specific product, we are redirected to a third hyperlink that contains additional information, including the year the product was released. On this page, we also find an option labeled *View Price Guide*, which leads us to the final crucial dataset.
 
-- Price Guide – Last 6 Months Sales: The fourth hyperlink leads to the *Current Items for Sale: New* table, which is particularly important for our analysis. This table contains market data on products that were sold within the last 6 months, including variables such as the total quantity of sales of this product, its average price and its maximum price.
+-   Price Guide – Last 6 Months Sales: The fourth hyperlink leads to the *Current Items for Sale: New* table, which is particularly important for our analysis. This table contains market data on products that were sold within the last 6 months, including variables such as the total quantity of sales of this product, its average price and its maximum price.
 
 To construct our final dataset, we need to sequentially scrape each of these four hyperlinks. We will develop a function that systematically navigates through each of them, extracting relevant data at each stage until we obtain the complete table.
 
@@ -423,6 +435,9 @@ We also need to have the year that the product was released in order to have the
 We first learn how to do it in just one product:
 
 ```{r}
+link_product <- "https://www.bricklink.com/v2/catalog/catalogitem.page?S=3219-1#T=S&O={%22iconly%22:0}"|>
+  read_html()
+
 # To obtain the year of the product
 link_product |> 
   xml_find_all("//a[@class='links']") |> 
@@ -477,7 +492,7 @@ link_product |>
 Next, we create a function that iterates through our entire dataset, extracting and adding each new link to a newly created column called price_link. This ensures that every product in our dataset is associated with its corresponding price history link.
 
 ```{r}
-extraer_link <- function(url) {
+extract_link <- function(url) {
   link_product <- tryCatch({
     read_html(url) #try
   }, error = function(e) {
@@ -502,7 +517,7 @@ extraer_link <- function(url) {
 all_products2 <- all_products %>%
   mutate(price_link = purrr::map_chr(Link, ~ {
     Sys.sleep(2)  #break between every request
-    extraer_link(.)
+    extract_link(.)
   }))
 ```
 
@@ -547,7 +562,8 @@ url_guide <- "https://www.bricklink.com/catalogPG.asp?S=4493-1&ColorID=0"
 page_guide <- read_html(url_guide)
 ```
 
-After reading the html, we can extract the data that we wanted following the XPaths located in the first table: "*Last 6 Months Sales: New*". The data that we can extract from this table are the following: times sold, total quantity, min price, avg price, avg quantity price and max price. The difference between *times sold* and *total quantity* is that *times sold* focuses on the number of transactions in which the product was included; on the other hand, *total quantity* reflects the actual number of pieces of that item that have changed hands, regardless of the number of transactions. 
+After reading the html, we can extract the data that we wanted following the XPaths located in the first table: "*Last 6 Months Sales: New*". The data that we can extract from this table are the following: times sold, total quantity, min price, avg price, avg quantity price and max price. The difference between *times sold* and *total quantity* is that *times sold* focuses on the number of transactions in which the product was included; on the other hand, *total quantity* reflects the actual number of pieces of that item that have changed hands, regardless of the number of transactions.
+
 ```{r}
 # Times Sold
 times_sold <- page_guide %>% 
@@ -951,7 +967,7 @@ write.csv(final_products, "data/final_brick.csv", row.names = FALSE)
 
 ## Analysis
 
-Thanks to all the data collected and stored in the previous sections, we can proceed with our final price analysis. To do this, we start by reading the final .csv documents, although we may already have them loaded in the environment. 
+Thanks to all the data collected and stored in the previous sections, we can proceed with our final price analysis. To do this, we start by reading the final .csv documents, although we may already have them loaded in the environment.
 
 ```{r}
 brick <- read_csv("data/final_brick.csv")
@@ -990,7 +1006,6 @@ theme_custom <- theme_minimal() +
     )
 ```
 
-
 ```{r}
 p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name, 
                         group = category_name)) +
@@ -1013,6 +1028,14 @@ p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name,
 
 p1
 ```
+This graph illustrates the evolution of LEGO set sizes over time, comparing different franchises based on the number of pieces per set across various years. Each franchise follows a distinct trend, showing how LEGO has adjusted set sizes over time for different themes.
+
+Star Wars and The Lord of the Rings (LOTR) appear to have some of the largest sets, with noticeable peaks in piece count, indicating the release of large, complex builds. Harry Potter also shows significant growth in set sizes, particularly in the later years. Meanwhile, Super Heroes, Disney, and Town exhibit more stable or modest growth, suggesting that their sets tend to remain in a lower piece range. Super Mario, being a newer franchise, has smaller sets overall, reflecting its recent introduction into the LEGO lineup.
+
+
+This next code is designed to standardize franchise names and categorize LEGO sets by the number of pieces, allowing for a fair comparison of prices across sets with similar piece counts.
+
+First, we unify franchise names to ensure consistency in analysis:
 
 ```{r}
 lego <- lego |> 
@@ -1026,6 +1049,7 @@ lego <- lego |>
       rename(category_name = franchise)
 ```
 
+Next, we define piece categories, grouping sets into predefined ranges like "0-500," "501-1000," and "5001+."  This categorization is crucial because it allows us to compare prices fairly between sets that belong to similar size ranges, avoiding bias caused by sets with significantly different piece counts.
 
 ```{r}
 # Defining the pieces categories
@@ -1040,6 +1064,8 @@ lego$piece_category <- cut(lego$piece_count,
                                     breaks = bins, 
                                     labels = labels, right = TRUE)
 ```
+
+Finally, we calculate average resale and retail prices per franchise and piece category. The resales dataset computes the average, minimum, and maximum resale prices for each franchise and piece category, while actual_prices calculates the average current retail price for those same categories. These datasets are then merged into comparison_pieces, creating a structured dataset that enables a direct comparison of retail prices versus resale values within similar-sized sets.
 
 ```{r}
 resales <- brick |> 
@@ -1056,45 +1082,7 @@ actual_prices <- lego |>
 comparison_pieces <- left_join(resales, actual_prices, 
                                by = c("piece_category", "category_name"))
 ```
-
-
-```{r}
-# Boxplot of maximum resale prices
-
-p2 <- ggplot(comparison_pieces, 
-             aes(x=reorder(category_name, Avg_Max_Resale_Price, FUN=median),
-                 y=Avg_Max_Resale_Price)) +
-     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
-                  outlier.size=2) +
-     scale_x_discrete(labels = c(
-         "The Hobbit and The Lord of the Rings" = "LOTR"
-       )) +
-     labs(title="Distribution of Resale Prices - Max Price",
-                 x="Franchise", y="Price of resale (€)") +
-     theme_custom
-
-p2
-```
-
-
-```{r}
-# Boxplot of minimum resale prices
-
-p3 <- ggplot(comparison_pieces, 
-             aes(x=reorder(category_name, Avg_Min_Resale_Price, FUN=median),
-                 y=Avg_Min_Resale_Price)) +
-     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
-                  outlier.size=2) +
-     scale_x_discrete(labels = c(
-         "The Hobbit and The Lord of the Rings" = "LOTR"
-       )) +
-     labs(title="Distribution of Resale Prices - Min Price",
-                   x="Franchise", y="Price of resale (€)") +
-     theme_custom
-
-p3
-```
-
+With this structured approach, our analysis ensures that price comparisons are meaningful, so this is the data set used for the next plots:
 
 ```{r}
 # Boxplot of average resale prices
@@ -1114,6 +1102,50 @@ p4 <- ggplot(comparison_pieces,
 p4
 ```
 
+```{r}
+# Boxplot of maximum resale prices
+
+p2 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Max_Resale_Price, FUN=median),
+                 y=Avg_Max_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Max Price",
+                 x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p2
+```
+
+```{r}
+# Boxplot of minimum resale prices
+
+p3 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Min_Resale_Price, FUN=median),
+                 y=Avg_Min_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Min Price",
+                   x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p3
+```
+The three boxplots provide a clear comparison of LEGO resale prices across different franchises, focusing on maximum, minimum, and average resale values. While each offers valuable insight, the average resale price is the most reliable indicator of a franchise's long-term investment potential.
+
+Looking at the maximum resale prices, Star Wars stands out as the most valuable franchise, with some sets reaching over €2,000. This suggests that Star Wars LEGO sets have the highest potential for appreciation, making them particularly attractive to collectors and investors. The Lord of the Rings (LOTR) follows closely behind, with some high-value sets, though not as consistently lucrative as Star Wars. On the other end of the spectrum, Super Mario and Disney display significantly lower maximum resale prices, indicating that even their most valuable sets do not reach the same level of demand in the secondary market.
+
+However, the minimum resale prices tell a different story. Star Wars, despite having the highest peaks, also exhibits greater variability, with some sets reselling for as little as €50. In contrast, franchises like Harry Potter, Super Heroes, and Town show more consistency, with higher minimum resale values than Disney or Super Mario, meaning that even their less valuable sets tend to hold a decent price.
+
+Despite these extremes, the average resale price provides the most balanced perspective, capturing overall market trends rather than isolated cases. Once again, Star Wars leads the way, with LOTR also performing strongly. These two franchises demonstrate not only the potential for extremely high resale values but also consistent overall profitability, making them the best choices for LEGO investment. Meanwhile, Super Heroes and Harry Potter maintain stable mid-range average prices, meaning they may not generate huge returns but are still relatively safe investments. On the lower end, Disney and Super Mario continue to underperform, reinforcing the idea that their sets do not appreciate significantly over time.
+
+By comparing all three metrics, a clear pattern emerges: Star Wars is the strongest franchise overall, with high average resale prices, an exceptional ceiling, and significant but varied demand. LOTR follows closely, proving to be a solid investment choice as well. Super Heroes and Harry Potter offer stability, making them good secondary options, while Super Mario and Disney appear to be the least profitable, with lower resale values across the board.
 
 ```{r}
 comparison_pieces$ROI <- ((comparison_pieces$Avg_Resale_Price -
@@ -1145,6 +1177,15 @@ p5 <- ggplot(df_sorted,
 
 p5
 ```
+The chart presents the Return on Investment (ROI) of LEGO by franchise, comparing the difference between the original retail price and the current resale value of LEGO sets. The ROI calculation, which measures the percentage increase or decrease in value, provides insight into which franchises are the most profitable investments.
+
+Among all franchises, Town emerges as the most profitable, with an average ROI of 103.9%, meaning that its sets, on average, more than double in resale value compared to their original price. Closely following is Star Wars, with an ROI of 102.5%, further solidifying its reputation as one of the most lucrative LEGO franchises. The enduring demand for Star Wars sets, coupled with their limited availability over time, makes them highly valuable in the secondary market.
+
+Moving down the list, Harry Potter and Disney demonstrate moderate profitability, with ROIs of 51.8% and 46.3%, respectively. While these sets appreciate in value over time, they do not generate the same level of returns as Town or Star Wars. Still, they remain solid investment options for those looking for moderate and relatively stable gains in the resale market.
+
+In contrast, Super Heroes LEGO sets show a considerably lower ROI at just 17.1%, indicating that their resale value does not increase as significantly. While these sets do appreciate to some extent, their profitability remains limited compared to higher-performing franchises. The least profitable of all, however, is Super Mario, with an ROI of only 1.4%. This suggests that Super Mario LEGO sets tend to retain their original price with little to no increase in resale value, making them the least attractive option for investment.
+
+Considering these trends, it is clear that Star Wars and Town are the best franchises for LEGO investors, offering the highest potential returns. Harry Potter and Disney provide decent but less impressive appreciation, making them suitable for collectors who are still looking for some level of profitability. Super Heroes offers limited investment potential, while Super Mario sets show almost no financial gain over time, making them the least appealing choice for resale. 
 
 ```{r}
 # Shiny and plotly interactive graph
@@ -1178,4 +1219,3 @@ server <- function(input, output) {
 
 shinyApp(ui = ui, server = server)
 ```
-
