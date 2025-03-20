@@ -1,0 +1,79 @@
+---
+title: "Shiny App"
+format: html
+editor: visual
+---
+
+# Shiny App
+
+```{r}
+brick <- read_csv("data/final_brick.csv")
+
+brick <- brick |> 
+  mutate(avg_price = as.numeric(avg_price),
+            pieces = as.numeric(pieces))
+
+lego <- read_csv("data/lego_official.csv")
+
+lego <- lego |> 
+  mutate(Price = as.numeric(Price),
+         PieceCount = as.numeric(PieceCount)) |> 
+  clean_names()
+```
+```{r}
+category_colors <- c(
+  "Star Wars" = "black",
+  "Super Mario" = "#D62728",
+  "Harry Potter" = "#FF7F0E",
+  "Town" = "#7F7F7F",
+  "The Hobbit and The Lord of the Rings" = "#2CA02C",
+  "Super Heroes" = "#3182BD", 
+  "Disney" = "#9467BD")
+
+theme_custom <- theme_minimal() +
+  theme(
+    axis.text.x = element_text(size=10, face="bold", color="gray20"),
+    axis.text.y = element_text(size=10, face="bold", color="gray20"),
+    axis.title = element_text(size=12, face="bold"),
+    plot.title = element_text(size=14, face="bold", hjust=0.5),
+    panel.grid.major = element_line(color="gray85"),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+    )
+```
+
+
+```{r}
+# Shiny and plotly interactive graph
+ui <- fluidPage(
+   titlePanel("Products per category, prices and pieces"),
+   verticalLayout(
+       selectInput("x_var", 
+                   label = "Select the variable for the X axis:", 
+                   choices = c("Min price", "Max price", "Avg price"),
+                   selected = "Min price"),
+       plotlyOutput("scatter_plot", height = "600px")))
+ 
+ # Server for the app
+server <- function(input, output) {
+   
+   output$scatter_plot <- renderPlotly({
+     # Dynamic selection based on the data
+     plot_data <- brick %>%
+       mutate(variable = case_when(
+         input$x_var == "Min price" ~ min_price,
+         input$x_var == "Max price" ~ max_price,
+         input$x_var == "Avg price" ~ avg_price))
+ 
+     # We create the interactive graph
+     p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
+                  mode = 'markers', color = ~category_name, 
+                  text = ~name, colors = category_colors,
+                  hoverinfo = 'text+x+y') #show name, x and y values
+     
+     p })}
+ 
+ shinyApp(ui = ui, server = server)
+ 
+```
+
