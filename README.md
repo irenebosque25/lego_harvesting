@@ -1,51 +1,76 @@
 # Lego Scraper for R
 
-An R-based web scraping project to extract designed to extract historical price data from [BrickLink](https://www.bricklink.com/v2/main.page) a popular marketplace for [LEGO](https://www.lego.com/es-es) sets and pieces and the official [LEGO](https://www.lego.com/es-es) website.
+An R-based web scraping project to extract designed to extract historical price data from [BrickLink](https://www.bricklink.com/v2/main.page) a popular marketplace for LEGO sets and pieces and the official [LEGO](https://www.lego.com/es-es) website.
 
-Our primary motivation for undertaking this project was to explore the factors that drive the revaluation of LEGO sets, to analyse how their prices change over time, and to identify which sets offer the highest return on investment. With these results, we can discover patterns that influence the desirability and long-term value of certain sets. These insights can also serve as a foundation for similar projects.
+## Motivation
 
-## 📋 Requirements
+The primary motivation for undertaking this project was to explore the factors that drive the revaluation of LEGO sets, analyze how their prices change over time, and identify which sets offer the highest return on investment. The insights gathered can help discover patterns that influence certain sets' desirability and long-term value. Additionally, these findings serve as a foundation for similar projects in the future.
 
-Proper collection and subsequent analysis will require:
+This repository was created as part of the final project for the *Data Harvesting* course in the **Master's program in Computational Social Sciences** at **Universidad Carlos III de Madrid**.
 
--   R and R Studio correctly installed and updated
--   Required packages: *rvest*, *xml2*, *httr*, *stringr*, *tidyverse*, *tibble*, *readr*
+## Requirements
 
-This project will not require any interaction with Web APIs or any open-source automation tool such as Selenium. However, to fully perform the analysis it will require a VPN changing tool to extract all the information contained in the price guide of the product. After trying many options, we found that this was the most useful tool available to analyze different products without being banned from the website. In this case, we used the SurfShark application, but any other VPN switching tool can be used. It must be addressed that the maximum number of product prices that could be scraped without receiving only missing values is 17.
+For proper collection and subsequent analysis, you'll need:
 
-## 🔎How it works?
+R and R Studio correctly installed and updated.
 
-This project aims to collect information about the market price of second-hand Legos in the following categories selected: *Town*, *Disney*, *Harry Potter*, *The Hobbit and The Lord of the Rings*, *Super Heroes*, *Star Wars* and *Super Mario*.
+This project does not require any interaction with Web APIs or open-source automation tools like Selenium. However, to fully perform the analysis, a VPN switching tool is necessary to extract all the information from the product's price guide. After testing several options, we found [**SurfShark**](https://surfshark.com/es/deal/brand?coupon=fullsecurity&utm_campaign=21583930782&utm_content=165430878465&matchtype=e&device=c&gclid=Cj0KCQjw1um-BhDtARIsABjU5x5KCaue4QmdT-cDnIekwASUQzPcKeblzWVoQLai0GT1jKbIZhgDeWMaAp7AEALw_wcB&creative=709813049223&utm_term=surfshark&utm_source=google&utm_medium=cpc&gad_source=1) to be the most useful tool for analyzing different products without getting blocked by the website. Any other VPN tool can be used, but it's important to note that only 17 product prices could be scraped without receiving missing values.
 
-To do this, we created an Rmd document with which, using different web scraping tools within R, we were able to extract relevant information about the sets of these categories.
+## How Does It Work?
 
-### Summary of the project
+This project aims to collect market price information for second-hand LEGO sets in the following selected categories:
 
-The project uses exclusively R language and is divided into these main sections:
+-   Town
 
--   Web scraping on the official LEGO website
+-   Disney
 
-<!-- -->
+-   Harry Potter
 
--   Bricklink environment familiarization
+-   The Hobbit and The Lord of the Rings
 
--   Select the main categories on the sets page
+-   Super Heroes
 
--   Scraping process to obtain all the sets available
+-   Star Wars
 
--   Final data harvesting to obtain all the relevant product data:
+-   Super Mario
 
-    -   Name and link
+### Project Overview
 
-    -   Number of pieces
+The project exclusively uses the R language and is divided into the following main sections:
 
-    -   Year of the product
+1.  **Web Scraping on the Official LEGO Website**: Collecting relevant data from the official LEGO site.
 
-    -   Historical product prices (this step would require VPN switching)
+2.  **BrickLink Environment Familiarization**: Understanding the BrickLink platform and data structure.
 
-In this case, all prices were either expressed in euros or were converted into euros at current exchange rates.
+3.  **Selecting Main Categories on the Sets Page**: Identifying the most relevant categories for the analysis.
 
-## 📊 Extracted Data
+4.  **Scraping Process**: Collecting data for all available sets.
+
+5.  **Final Data Harvesting**: Extracting the most relevant product data, which includes:
+
+    -   Product Name and Link
+
+    -   Number of Pieces
+
+    -   Year of the Product
+
+    -   Historical Product Prices (Note: This step requires VPN switching)
+
+        All prices were either expressed in euros or converted into euros using current exchange rates.
+
+## Running the Project
+
+To run the project, you’ll need to execute the provided Rmd document. Ensure that you have installed all necessary packages, set up your VPN, and follow the instructions in the notebook.
+
+### Step-by-Step Guide
+
+1.  **Set Up Environment**: Install the required packages.
+
+2.  **Scraping Data**: Follow the steps in the Rmd document to scrape LEGO product data.
+
+3.  **Data Analysis**: Use the gathered data for further analysis, such as tracking price trends and identifying valuable sets.
+
+## Extracted Data
 
 ## ![](images/lego_harvesting.jpg)
 
