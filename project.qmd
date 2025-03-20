@@ -207,6 +207,9 @@ official_lego <- bind_rows(
 
 official_lego <- official_lego |> #the Nas are not LEGO sets but keychains or teddies
   drop_na (PieceCount)
+
+
+# write.csv(official_lego, "lego_official.csv", row.names = FALSE)
 ```
 
 ## Bricklink
