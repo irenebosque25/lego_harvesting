@@ -1,0 +1,67 @@
+/*-- scss:defaults --*/
+
+/*-- scss:rules --*/
+/* GENERAL SLIDE STYLE */
+.reveal {
+  font-family: 'Fredoka', sans-serif;
+  background: #e3000b; 
+  color: white;
+}
+
+/* HEADINGS */
+.reveal h1, .reveal h2, .reveal h3 {
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0px #feec00; 
+}
+
+/* SLIDE TITLES */
+.reveal h1 {
+  color: white;
+  border-bottom: 5px solid #feec00;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+
+/* LINKS */
+.reveal a {
+  color: white; 
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.reveal a:hover {
+  color: #feec00; /* LEGO Red */
+  text-decoration: underline;
+}
+
+/* CODE BLOCKS */
+.reveal pre {
+  background: #f8f9fa; 
+  border-left: 5px solid #feec00;
+  padding: 10px;
+}
+
+/* BUTTON STYLE */
+.reveal .button {
+  background-color: #feec00; 
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.reveal .button:hover {
+  background-color: #feec00; 
+}
+
+/* BOXED SECTIONS */
+.reveal .block {
+  background-color: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 5px 5px 0px #feec00;
+}
+

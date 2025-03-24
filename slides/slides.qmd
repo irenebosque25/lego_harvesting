@@ -1,0 +1,232 @@
+---
+title: "LEGO: Play or Invest?"
+subtitle: "Data Harvesting 2025"
+author: "Pablo Aísa and Irene Bosque"
+format: 
+  revealjs: 
+    theme: custom.css
+    transition: slide
+    include-in-header:
+          - text: <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap" rel="stylesheet">
+
+editor: visual
+---
+
+```{r, warning FALSE, echo = FALSE}
+# Libraries
+library(rvest)
+library(xml2)
+library(httr)
+library(stringr)
+library(tidyverse)
+library(tibble)
+library(readr)
+library(janitor)
+library(shiny)
+library(plotly)
+```
+
+```{r, echo = FALSE}
+brick <- read_csv("../data/final_brick.csv")
+lego <- read_csv("../data/lego_official.csv")
+```
+
+------------------------------------------------------------------------
+
+## The project
+
+---
+
+## Problems faced
+
+---
+
+## Final output
+
+---
+
+## Data visualizations
+
+::: {.panel-tabset}
+
+```{r, echo=FALSE}
+# Pre-processing
+brick <- brick |> 
+  mutate(avg_price = as.numeric(avg_price),
+            pieces = as.numeric(pieces))
+
+lego <- lego |> 
+  mutate(Price = as.numeric(Price),
+         PieceCount = as.numeric(PieceCount)) |> 
+  clean_names()
+```
+
+```{r, echo=FALSE}
+category_colors <- c(
+  "Star Wars" = "black",
+  "Super Mario" = "#D62728",
+  "Harry Potter" = "#FF7F0E",
+  "Town" = "#7F7F7F",
+  "The Hobbit and The Lord of the Rings" = "#2CA02C",
+  "Super Heroes" = "#3182BD", 
+  "Disney" = "#9467BD")
+
+theme_custom <- theme_minimal() +
+  theme(
+    axis.text.x = element_text(size=10, face="bold", color="gray20"),
+    axis.text.y = element_text(size=10, face="bold", color="gray20"),
+    axis.title = element_text(size=12, face="bold"),
+    plot.title = element_text(size=14, face="bold", hjust=0.5),
+    panel.grid.major = element_line(color="gray85"),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+    )
+```
+
+### Evolution of pieces per category
+
+```{r}
+p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name, 
+                        group = category_name)) +
+  geom_line(linewidth = 0.85) +  # Lines grouped by category
+  geom_point() +
+  xlim(2000, 2020) +
+  labs(title = "Evolution of pieces per category",
+       x = "Year",
+       y = "Number of pieces",
+       color = "Category:") +
+  scale_color_manual(values = category_colors) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.title = element_text(size=10, face = "bold"),
+    title = element_text(size=14, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.background = element_rect(color = "black", size = 0.5))
+
+p1
+```
+
+```{r, echo=FALSE}
+lego <- lego |> 
+    mutate(franchise = case_when(
+      franchise == "City" ~ "Town",
+      franchise == "Lord of the Rings" ~ 
+           "The Hobbit and The Lord of the Rings",
+      franchise == "Marvel" ~ "Super Heroes",
+         TRUE ~ franchise
+       ))|> 
+      rename(category_name = franchise)
+
+bins <- c(0, 500, 1000, 2000, 3000, 5000, 10000)
+
+labels <- c("0-500", "501-1000", "1001-2000", "2001-3000", "3001-5000", "5001+")
+
+brick$piece_category <- cut(brick$pieces, 
+                                  breaks = bins, 
+                                  labels = labels, right = TRUE)
+lego$piece_category <- cut(lego$piece_count, 
+                                    breaks = bins, 
+                                    labels = labels, right = TRUE)
+
+resales <- brick |> 
+     group_by(category_name, piece_category) |> 
+     summarise(
+         Avg_Resale_Price = mean(avg_price, na.rm = TRUE),
+         Avg_Min_Resale_Price = mean(min_price, na.rm = TRUE),
+         Avg_Max_Resale_Price = mean(max_price, na.rm = TRUE))
+
+actual_prices <- lego |> 
+  group_by(piece_category, category_name) |> 
+  summarise(Avg_Current_Price = mean(price, na.rm = TRUE))
+
+comparison_pieces <- left_join(resales, actual_prices, 
+                               by = c("piece_category", "category_name"))
+```
+
+### Distribution of Resale Prices - Avg Price
+
+```{r, echo=FALSE}
+p4 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Resale_Price, FUN=median),
+                 y=Avg_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Avg Price",
+                   x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p4
+```
+
+### Investment
+
+```{r}
+comparison_pieces$ROI <- ((comparison_pieces$Avg_Resale_Price -
+                             comparison_pieces$Avg_Current_Price)/ 
+                            comparison_pieces$Avg_Current_Price)*100
+
+df_sorted <- comparison_pieces |> 
+  drop_na(ROI) |>
+  group_by(category_name) |> 
+  summarise(ROI = mean(ROI)) |> 
+  arrange(desc(ROI)) |>
+  filter(!category_name =="The Hobbit and The Lord of the Rings")
+
+p5 <- ggplot(df_sorted, 
+             aes(x=reorder(category_name, ROI), y=ROI, fill=ROI)) +
+  geom_bar(stat="identity", width=0.6, color="black") +
+  scale_fill_gradient(low="yellow", high="red4") +
+  scale_y_continuous(limits = c(0, 130)) +
+  labs(title="Profitability (ROI) of LEGO by franchise",
+       subtitle="Comparing the actual and resale products by pieces",
+       x="Franchise", y="ROI (%)") +
+  coord_flip() +  # Graph flipped
+  geom_text(aes(label=sprintf("%.1f%%", ROI)), 
+            hjust=-0.2, size=4.5, fontface="bold") +
+  theme_custom
+
+p5
+```
+
+### Shiny visual representation
+
+```{r, echo=FALSE}
+# Shiny and plotly interactive graph
+ui <- fluidPage(
+   titlePanel("Products per category, prices and pieces"),
+   verticalLayout(
+       selectInput("x_var", 
+                   label = "Select the variable for the X axis:", 
+                   choices = c("Min price", "Max price", "Avg price"),
+                   selected = "Min price"),
+       plotlyOutput("scatter_plot", height = "600px")))
+ 
+ # Server for the app
+server <- function(input, output) {
+   
+   output$scatter_plot <- renderPlotly({
+     # Dynamic selection based on the data
+     plot_data <- brick %>%
+       mutate(variable = case_when(
+         input$x_var == "Min price" ~ min_price,
+         input$x_var == "Max price" ~ max_price,
+         input$x_var == "Avg price" ~ avg_price))
+ 
+     # We create the interactive graph
+     p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
+                  mode = 'markers', color = ~category_name, 
+                  text = ~name, colors = category_colors,
+                  hoverinfo = 'text+x+y') #show name, x and y values
+     
+     p })}
+ 
+ shinyApp(ui = ui, server = server)
+ 
+```
+
+---
