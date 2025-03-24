@@ -60,13 +60,13 @@ The project exclusively uses the R language and is divided into the following ma
 
 ## Running the Project
 
-To run the project, you’ll need to execute the provided Rmd document. Ensure that you have installed all necessary packages, set up your VPN, and follow the instructions in the notebook.
+To run the project, you’ll need to execute the provided Qmd document. Ensure that you have installed all necessary packages, set up your VPN, and follow the instructions in the notebook.
 
 ### Step-by-Step Guide
 
 1.  **Set Up Environment**: Install the required packages.
 
-2.  **Scraping Data**: Follow the steps in the Rmd document to scrape LEGO product data.
+2.  **Scraping Data**: Follow the steps in the Qmd document to scrape LEGO product data.
 
 3.  **Data Analysis**: Use the gathered data for further analysis, such as tracking price trends and identifying valuable sets.
 
