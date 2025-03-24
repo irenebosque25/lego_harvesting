@@ -35,19 +35,83 @@ lego <- read_csv("../data/lego_official.csv")
 
 ## The project
 
----
+Scraping two webs:
 
-## Problems faced
+-   Lego official webpage (Spain): https://www.lego.com/es-es
 
----
+-   Bricklink: https://www.bricklink.com/catalogTree.asp?itemType=S
+
+    -   Four Different Hyperlinks
+
+------------------------------------------------------------------------
+
+Categories
+
+::: {style="float: right; width: 75%;"}
+<img src="images/bricklink first hyperlink.png" width="100%"/>
+:::
+
+------------------------------------------------------------------------
+
+All products
+
+::: {style="float: right; width: 75%;"}
+<img src="images/bricklink hyperlink2.png" width="100%"/>
+:::
+
+------------------------------------------------------------------------
+
+One single product
+
+::: {style="float: right; width: 75%;"}
+<img src="images/bricklink hyperlink3.png" width="100%"/>
+:::
+
+------------------------------------------------------------------------
+
+Price table
+
+::: {style="float: right; width: 75%;"}
+<img src="images/bricklink hyperlink 4.png" width="100%"/>
+:::
+
+------------------------------------------------------------------------
+
+##  {.center .large}
+
+# Problems faced
+
+------------------------------------------------------------------------
+
+## Easy Scrap
+
+
+
+
+::: {style="text-align: center;"}
+<img src="images/easy scrap.png" width="150%"/>
+:::
+
+------------------------------------------------------------------------
+
+## Problems with NA
+
+
+
+
+::: {style="text-align: center;"}
+<img src="images/NA table.png" width="150%"/>
+:::
+
+------------------------------------------------------------------------
 
 ## Final output
 
----
+------------------------------------------------------------------------
 
-## Data visualizations
+##  {.center .large}
 
-::: {.panel-tabset}
+# Data visualizations
 
 ```{r, echo=FALSE}
 # Pre-processing
@@ -83,6 +147,8 @@ theme_custom <- theme_minimal() +
     )
 ```
 
+------------------------------------------------------------------------
+
 ### Evolution of pieces per category
 
 ```{r}
@@ -107,6 +173,8 @@ p1 <- ggplot(brick, aes(x = year, y = pieces, color = category_name,
 
 p1
 ```
+
+------------------------------------------------------------------------
 
 ```{r, echo=FALSE}
 lego <- lego |> 
@@ -145,7 +213,10 @@ comparison_pieces <- left_join(resales, actual_prices,
                                by = c("piece_category", "category_name"))
 ```
 
-### Distribution of Resale Prices - Avg Price
+### Distribution of Resale Prices
+
+::: panel-tabset
+#### Avg Price
 
 ```{r, echo=FALSE}
 p4 <- ggplot(comparison_pieces, 
@@ -162,6 +233,49 @@ p4 <- ggplot(comparison_pieces,
 
 p4
 ```
+
+------------------------------------------------------------------------
+
+#### Max Price
+
+```{r}
+p2 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Max_Resale_Price, FUN=median),
+                 y=Avg_Max_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Max Price",
+                 x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p2
+```
+
+------------------------------------------------------------------------
+
+#### Min Price
+
+```{r}
+p3 <- ggplot(comparison_pieces, 
+             aes(x=reorder(category_name, Avg_Min_Resale_Price, FUN=median),
+                 y=Avg_Min_Resale_Price)) +
+     geom_boxplot(fill="red3", color="black", outlier.colour="yellow",
+                  outlier.size=2) +
+     scale_x_discrete(labels = c(
+         "The Hobbit and The Lord of the Rings" = "LOTR"
+       )) +
+     labs(title="Distribution of Resale Prices - Min Price",
+                   x="Franchise", y="Price of resale (€)") +
+     theme_custom
+
+p3
+```
+:::
+
+------------------------------------------------------------------------
 
 ### Investment
 
@@ -192,41 +306,3 @@ p5 <- ggplot(df_sorted,
 
 p5
 ```
-
-### Shiny visual representation
-
-```{r, echo=FALSE}
-# Shiny and plotly interactive graph
-ui <- fluidPage(
-   titlePanel("Products per category, prices and pieces"),
-   verticalLayout(
-       selectInput("x_var", 
-                   label = "Select the variable for the X axis:", 
-                   choices = c("Min price", "Max price", "Avg price"),
-                   selected = "Min price"),
-       plotlyOutput("scatter_plot", height = "600px")))
- 
- # Server for the app
-server <- function(input, output) {
-   
-   output$scatter_plot <- renderPlotly({
-     # Dynamic selection based on the data
-     plot_data <- brick %>%
-       mutate(variable = case_when(
-         input$x_var == "Min price" ~ min_price,
-         input$x_var == "Max price" ~ max_price,
-         input$x_var == "Avg price" ~ avg_price))
- 
-     # We create the interactive graph
-     p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
-                  mode = 'markers', color = ~category_name, 
-                  text = ~name, colors = category_colors,
-                  hoverinfo = 'text+x+y') #show name, x and y values
-     
-     p })}
- 
- shinyApp(ui = ui, server = server)
- 
-```
-
----
