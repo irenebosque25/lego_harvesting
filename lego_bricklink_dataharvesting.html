@@ -203,8 +203,8 @@ The following object is masked from 'package:graphics':
 <span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>prices</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 279.99 399.99  39.99  89.99  69.99  99.99 219.99   9.99  39.99  54.99
-[11]  99.99  19.99   9.99  99.99  19.99  64.99  39.99  59.99</code></pre>
+<pre><code> [1] 279.99 399.99  39.99  89.99 219.99  99.99  99.99  69.99  99.99 199.99
+[11]   9.99 129.99  19.99  39.99  54.99   9.99  19.99  64.99</code></pre>
 </div>
 </div>
 <p>Then the name of each product of this same page:</p>
@@ -216,24 +216,24 @@ The following object is masked from 'package:graphics':
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>titles</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] "Castillo de Bella y Bestia"                 
- [2] "Castillo Disney"                            
- [3] "Heihei"                                     
- [4] "Casa en la Playa de Lilo y Stitch"          
- [5] "Trajes de Maléfica y Cruella De Vil"        
- [6] "Barcaza de los Kakamora"                    
- [7] "Cabaña de Blancanieves y los Siete Enanitos"
- [8] "Dumbo"                                      
- [9] "Traje de Cenicienta"                        
-[10] "Casa de “Up”"                               
-[11] "Cámara en Homenaje a Walt Disney"           
-[12] "El Rey León: Simba Cachorro"                
-[13] "Ígor"                                       
-[14] "Magia Disney"                               
-[15] "Diversión en la Isla con Vaiana"            
-[16] "Stitch"                                     
-[17] "Mini Castillo Disney"                       
-[18] "Canoa de Aventuras de Vaiana"               </code></pre>
+<pre><code> [1] "Castillo de Bella y Bestia"                   
+ [2] "Castillo Disney"                              
+ [3] "Heihei"                                       
+ [4] "Casa en la Playa de Lilo y Stitch"            
+ [5] "Cabaña de Blancanieves y los Siete Enanitos"  
+ [6] "Cámara en Homenaje a Walt Disney"             
+ [7] "Magia Disney"                                 
+ [8] "Trajes de Maléfica y Cruella De Vil"          
+ [9] "Barcaza de los Kakamora"                      
+[10] "Disney Tim Burton: Pesadilla antes de Navidad"
+[11] "Dumbo"                                        
+[12] "El Rey León: Simba Joven"                     
+[13] "El Rey León: Simba Cachorro"                  
+[14] "Traje de Cenicienta"                          
+[15] "Casa de “Up”"                                 
+[16] "Ígor"                                         
+[17] "Diversión en la Isla con Vaiana"              
+[18] "Stitch"                                       </code></pre>
 </div>
 </div>
 <p>And finally the code to extract the number of pieces of each product:</p>
@@ -245,8 +245,8 @@ The following object is masked from 'package:graphics':
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>pieces</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> [1] 2916 4837  566  834  524  572 2228  176  474  598  811  222  156 1103  175
-[16]  730  567  529</code></pre>
+<pre><code> [1] 2916 4837  566  834 2228  811 1103  524  572 2193  176 1445  222  474  598
+[16]  156  175  730</code></pre>
 </div>
 </div>
 <p>Next, we create the function that automatizes this process, and then apply every link of every category to the function</p>
@@ -871,9 +871,9 @@ dbl (1): Pieces
 <span id="cb64-10"><a href="#cb64-10" aria-hidden="true" tabindex="-1"></a>results_guide</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 1 × 6
-  Times_Sold Total_Qty Min_Price  Avg_Price  Qty_Avg_Price Max_Price 
-  &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;         &lt;chr&gt;     
-1 2          2         ROL&nbsp;125.50 ROL&nbsp;126.93 ROL&nbsp;126.93    ROL&nbsp;128.36</code></pre>
+  Times_Sold Total_Qty Min_Price Avg_Price Qty_Avg_Price Max_Price
+  &lt;chr&gt;      &lt;chr&gt;     &lt;chr&gt;     &lt;chr&gt;     &lt;chr&gt;         &lt;chr&gt;    
+1 2          2         EUR&nbsp;25.22 EUR&nbsp;25.50 EUR&nbsp;25.50     EUR&nbsp;25.79</code></pre>
 </div>
 </div>
 <p>Before proceeding with the full-function implementation, we decided to test another product to verify whether we could consistently extract all the necessary data.</p>
