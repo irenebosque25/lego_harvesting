@@ -6,8 +6,6 @@ format:
   revealjs: 
     theme: custom.css
     transition: slide
-    include-in-header:
-          - text: <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap"rel="stylesheet">
 editor: visual
 ---
 
@@ -34,12 +32,11 @@ lego <- read_csv("../data/lego_official.csv")
 
 ## The project
 
-Scraping two webs:
-<span style="font-size: 40%;">
+Scraping two webs: <span style="font-size: 40%;">
 
--   Lego official webpage (Spain): https://www.lego.com/es-es
+-   LEGO official [webpage](https://www.lego.com/es-es) (Spain)
 
--   Bricklink: https://www.bricklink.com/catalogTree.asp?itemType=S
+-   [Bricklink](https://www.bricklink.com/catalogTree.asp?itemType=S):
 
     -   Four Different Hyperlinks
 
@@ -47,7 +44,7 @@ Scraping two webs:
 
 ------------------------------------------------------------------------
 
-Categories
+Categories:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink first hyperlink.png" width="100%"/>
@@ -55,7 +52,7 @@ Categories
 
 ------------------------------------------------------------------------
 
-All products
+All products:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink2.png" width="100%"/>
@@ -63,7 +60,7 @@ All products
 
 ------------------------------------------------------------------------
 
-One single product
+One single product:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink3.png" width="100%"/>
@@ -71,39 +68,37 @@ One single product
 
 ------------------------------------------------------------------------
 
-Price table
+Price table:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink 4.png" width="100%"/>
 :::
 
---- 
+------------------------------------------------------------------------
 
 ##  {.center .large}
 
-# PROCESS
+# Scrapping process
 
----
+------------------------------------------------------------------------
 
 ## First steps
 
-We succeded without big issues scraping all of the first three hyperlinks:
-- Table with all products, pieces, years, sets and the link that lead us to the product prices
+We succeded without big issues scraping all of the first three hyperlinks: - Table with all products, pieces, years, sets and the link that lead us to the product prices
 
 ::: {style="text-align: center;"}
 <img src="images/easy scrap.png" width="200%"/>
 :::
 
----
+------------------------------------------------------------------------
 
-## First Problems: Blocks
+## First Problems: blocks
 
 ::: {style="text-align: center;"}
-<img src="images/block.jpg" width="200%"/>
+![](images/block.jpg)
 :::
 
-
----
+------------------------------------------------------------------------
 
 ## Solution: reinforced security measures
 
@@ -117,7 +112,6 @@ user_agents <- c(
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0")
 ```
 
-
 ------------------------------------------------------------------------
 
 Additionally, the script adds custom headers, including Accept-Language and Referer
@@ -130,7 +124,7 @@ Additionally, the script adds custom headers, including Accept-Language and Refe
     )
 ```
 
----
+------------------------------------------------------------------------
 
 To further increase stealth, sessions and cookies are handled using html_session().
 
@@ -151,7 +145,7 @@ To further increase stealth, sessions and cookies are handled using html_session
                   Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
 ```
 
----
+------------------------------------------------------------------------
 
 Finally, randomized delays between requests help avoid bot detection.
 
@@ -168,7 +162,7 @@ Finally, randomized delays between requests help avoid bot detection.
   return(data)
 ```
 
----
+------------------------------------------------------------------------
 
 ## Final function
 
@@ -244,17 +238,17 @@ history_data <- function(price_link) {
 }
 ```
 
----
+------------------------------------------------------------------------
 
-While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: 
+While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared:
 
 ::: {style="text-align: center;"}
 <img src="images/NA table.png" width="200%"/>
 :::
 
----
+------------------------------------------------------------------------
 
-## Final Solution
+## Final solution
 
 For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.
 
@@ -266,10 +260,9 @@ pieces_category <- all_products |>
   ungroup()
 ```
 
----
+------------------------------------------------------------------------
 
 Once we have the 15 products we applied the function to each category selected with the help of a VPN. In order to get the 15 products of each category we had to change the country each time we execute the code
-
 
 ```{r, eval = FALSE, echo = TRUE}
 # Harry Potter: Rome, Italy
@@ -329,7 +322,7 @@ products7 <- products_sh |>
   unnest(history_data)
 ```
 
----
+------------------------------------------------------------------------
 
 Finally we merge everything into one single dataset
 
@@ -341,14 +334,13 @@ final_products <- final_products |>
   clean_names()
 ```
 
----
+------------------------------------------------------------------------
 
 ## Final output
 
 ::: {style="text-align: center;"}
 <img src="images/lego_harvesting.jpg" width="200%"/>
 :::
-
 
 ------------------------------------------------------------------------
 
@@ -550,14 +542,10 @@ p5 <- ggplot(df_sorted,
 p5
 ```
 
----
-
+------------------------------------------------------------------------
 
 ::: {style="display: flex; justify-content: center; align-items: center; height: 120vh"}
-<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" 
-        width="900" height="450" style="border: none;">
+<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" width="900" height="450" style="border: none;">
+
 </iframe>
 :::
-
-
-

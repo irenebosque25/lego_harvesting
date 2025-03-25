@@ -1,9 +1,12 @@
+
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+
 /*-- scss:defaults --*/
 
 /*-- scss:rules --*/
 /* GENERAL SLIDE STYLE */
 .reveal {
-  font-family: 'Fredoka', sans-serif;
+  font-family: 'Roboto', sans-serif;
   background: #e3000b; 
   color: white;
 }
@@ -12,8 +15,16 @@
 .reveal h1, .reveal h2, .reveal h3 {
   color: white;
   font-weight: bold;
-  text-transform: uppercase;
-  text-shadow: 3px 3px 0px #feec00; 
+  text-shadow: 3px 3px 0px #feec00;
+  font-size: 1.5em;
+}
+
+.reveal h2 {
+  font-size: 1.25em;
+}
+
+.reveal h3 {
+  font-size: 1em;
 }
 
 /* SLIDE TITLES */
@@ -32,7 +43,7 @@
 }
 
 .reveal a:hover {
-  color: #feec00; /* LEGO Red */
+  color: #feec00; /* LEGO yellow */
   text-decoration: underline;
 }
 
@@ -63,5 +74,14 @@
   padding: 15px;
   border-radius: 10px;
   box-shadow: 5px 5px 0px #feec00;
+}
+
+/* INDEX BUTTON */
+.reveal .slide-menu-button {
+  color: #feec00;
+}
+
+.reveal p {
+  font-size: 0.8em;
 }
 
