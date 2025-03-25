@@ -8,7 +8,6 @@ format:
     transition: slide
     include-in-header:
           - text: <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap"rel="stylesheet">
-
 editor: visual
 ---
 
@@ -36,12 +35,15 @@ lego <- read_csv("../data/lego_official.csv")
 ## The project
 
 Scraping two webs:
+<span style="font-size: 40%;">
 
 -   Lego official webpage (Spain): https://www.lego.com/es-es
 
 -   Bricklink: https://www.bricklink.com/catalogTree.asp?itemType=S
 
     -   Four Different Hyperlinks
+
+</span>
 
 ------------------------------------------------------------------------
 
@@ -75,37 +77,278 @@ Price table
 <img src="images/bricklink hyperlink 4.png" width="100%"/>
 :::
 
-------------------------------------------------------------------------
+--- 
 
 ##  {.center .large}
 
-# Problems faced
+# PROCESS
 
-------------------------------------------------------------------------
+---
 
-## Easy Scrap
+## First steps
 
-
-
-
-::: {style="text-align: center;"}
-<img src="images/easy scrap.png" width="150%"/>
-:::
-
-------------------------------------------------------------------------
-
-## Problems with NA
-
-
-
+We succeded without big issues scraping all of the first three hyperlinks:
+- Table with all products, pieces, years, sets and the link that lead us to the product prices
 
 ::: {style="text-align: center;"}
-<img src="images/NA table.png" width="150%"/>
+<img src="images/easy scrap.png" width="200%"/>
 :::
 
+---
+
+## First Problems: Blocks
+
+::: {style="text-align: center;"}
+<img src="images/block.jpg" width="200%"/>
+:::
+
+
+---
+
+## Solution: reinforced security measures
+
+First, to avoid detection, the code randomizes the User-Agent with each request.
+
+```{r, eval = FALSE, echo = TRUE}
+# User-agents to rotate and not being blocked
+user_agents <- c(
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0")
+```
+
+
 ------------------------------------------------------------------------
+
+Additionally, the script adds custom headers, including Accept-Language and Referer
+
+```{r, eval = FALSE, echo = TRUE}
+ headers <- add_headers(
+    "User-Agent" = random_user_agent,
+    "Accept-Language" = "en-US,en;q=0.9", # simulate a real browser
+    "Referer" = "https://google.com"
+    )
+```
+
+---
+
+To further increase stealth, sessions and cookies are handled using html_session().
+
+```{r, eval = FALSE, echo = TRUE}
+ session <- tryCatch(html_session(price_link, headers), 
+                      error = function(e) return(NULL))
+  if (is.null(session)) {
+    print("Error logging in. Probably blocked.")
+    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
+                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
+  }
+  price_history_page <- tryCatch(read_html(session), 
+                                 error = function(e) return(NULL))
+  if (is.null(price_history_page)) { # read the html
+    print("Page blocked or CAPTCHA detected")
+    writeLines(as.character(session), "error_page.html")
+    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
+                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
+```
+
+---
+
+Finally, randomized delays between requests help avoid bot detection.
+
+```{r, eval = FALSE, echo = TRUE}
+  counter <<- counter + 1 # product count
+  if (counter %% 7 == 0) {
+    pause_time <- runif(1, min = 20, max = 30) # longer pause every 7
+  } else {
+    pause_time <- runif(1, min = 10, max = 15) # normal pause
+  }
+  print(paste("Waiting", 
+              round(pause_time, 2), "seconds before the next request..."))
+  Sys.sleep(pause_time)
+  return(data)
+```
+
+---
+
+## Final function
+
+```{r, eval = FALSE, echo = TRUE}
+# User-agents to rotate and not being blocked
+user_agents <- c(
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0")
+
+counter <- 0 # To count the number of products and then do a larger pause each 7 products scrapped
+
+history_data <- function(price_link) {
+  random_user_agent <- sample(user_agents, 1) # random user
+  
+  headers <- add_headers(
+    "User-Agent" = random_user_agent,
+    "Accept-Language" = "en-US,en;q=0.9", # simulate a real browser
+    "Referer" = "https://google.com"
+    )
+  # create a log in with cookier and user-agent
+  session <- tryCatch(html_session(price_link, headers), 
+                      error = function(e) return(NULL))
+  if (is.null(session)) {
+    print("Error logging in. Probably blocked.")
+    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
+                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
+  }
+  price_history_page <- tryCatch(read_html(session), 
+                                 error = function(e) return(NULL))
+  if (is.null(price_history_page)) { # read the html
+    print("Page blocked or CAPTCHA detected")
+    writeLines(as.character(session), "error_page.html")
+    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
+                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
+  }
+  # Data from Xpaths
+  data <- tibble(
+    Times_Sold = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Total_Qty = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Min_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Avg_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Qty_Avg_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
+      html_text(trim = TRUE),
+    
+    Max_Price = price_history_page %>%
+      xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
+      html_text(trim = TRUE))
+  
+  counter <<- counter + 1 # product count
+  if (counter %% 7 == 0) {
+    pause_time <- runif(1, min = 20, max = 30) # longer pause every 7
+  } else {
+    pause_time <- runif(1, min = 10, max = 15) # normal pause
+  }
+  print(paste("Waiting", 
+              round(pause_time, 2), "seconds before the next request..."))
+  Sys.sleep(pause_time)
+  return(data)
+}
+```
+
+---
+
+While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: 
+
+::: {style="text-align: center;"}
+<img src="images/NA table.png" width="200%"/>
+:::
+
+---
+
+## Final Solution
+
+For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.
+
+```{r, eval = FALSE, echo = TRUE}
+pieces_category <- all_products |> 
+  filter(year <= 2020) |> 
+  group_by(category_name) |>         
+  slice_max(order_by = Pieces, n = 15, with_ties = FALSE) %>% 
+  ungroup()
+```
+
+---
+
+Once we have the 15 products we applied the function to each category selected with the help of a VPN. In order to get the 15 products of each category we had to change the country each time we execute the code
+
+
+```{r, eval = FALSE, echo = TRUE}
+# Harry Potter: Rome, Italy
+products_hp <- pieces_category |> 
+  filter(category_name == "Harry Potter") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products1 <- products_hp |> 
+  unnest(history_data)
+
+# Disney: Frankfurt, Germany
+products_dis <- pieces_category |> 
+  filter(category_name == "Disney") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products2 <- products_dis |> 
+  unnest(history_data)
+
+# Star Wars: Paris, France
+products_sw <- pieces_category |> 
+  filter(category_name == "Star Wars") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products3 <- products_sw |> 
+  unnest(history_data)
+
+# LOTR: Dublin, Ireland
+products_lotr <- pieces_category |> 
+  filter(category_name == "The Hobbit and The Lord of the Rings") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products4 <- products_lotr |> 
+  unnest(history_data)
+
+# Town: London, UK
+products_town <- pieces_category |> 
+  filter(category_name == "Town") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products5 <- products_town |> 
+  unnest(history_data)
+
+# Super Mario: Praga, Czech Republic
+products_sm <- pieces_category |> 
+  filter(category_name == "Super Mario") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products6 <- products_sm |> 
+  unnest(history_data)
+
+# Super Heroes (Marvel & DC): Milan, Italy
+products_sh <- pieces_category |> 
+  filter(category_name == "Super Heroes") |> 
+  mutate(history_data = map(price_link, history_data)) 
+
+products7 <- products_sh |> 
+  unnest(history_data)
+```
+
+---
+
+Finally we merge everything into one single dataset
+
+```{r, eval = FALSE, echo = TRUE}
+final_products <- bind_rows(products1, products2, products3, products4, 
+                         products5, products6, products7)
+
+final_products <- final_products |> 
+  clean_names()
+```
+
+---
 
 ## Final output
+
+::: {style="text-align: center;"}
+<img src="images/lego_harvesting.jpg" width="200%"/>
+:::
+
 
 ------------------------------------------------------------------------
 
@@ -306,3 +549,15 @@ p5 <- ggplot(df_sorted,
 
 p5
 ```
+
+---
+
+
+::: {style="display: flex; justify-content: center; align-items: center; height: 120vh"}
+<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" 
+        width="900" height="450" style="border: none;">
+</iframe>
+:::
+
+
+
