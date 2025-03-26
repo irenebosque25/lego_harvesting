@@ -12,13 +12,19 @@ library(janitor)
 library(plotly)
 ```
 
-
 ```{r, echo = FALSE, message = FALSE}
 brick <- read_csv("data/final_brick.csv")
 
 brick <- brick |> 
   mutate(avg_price = as.numeric(avg_price),
-            pieces = as.numeric(pieces))
+         avg_price = round(as.numeric(avg_price), 2),
+         max_price = round(as.numeric(max_price), 2),
+         min_price = round(as.numeric(min_price), 2),
+         pieces = as.numeric(pieces),
+         category_name = case_when(
+           category_name == "The Hobbit and The Lord of the Rings" ~ 
+             "Hobbit and LOTR", #shorter
+           TRUE ~ category_name))
 
 lego <- read_csv("data/lego_official.csv")
 
@@ -34,7 +40,7 @@ category_colors <- c(
   "Super Mario" = "#D62728",
   "Harry Potter" = "#FF7F0E",
   "Town" = "#7F7F7F",
-  "The Hobbit and The Lord of the Rings" = "#2CA02C",
+  "Hobbit and LOTR" = "#2CA02C",
   "Super Heroes" = "#3182BD", 
   "Disney" = "#9467BD")
 
@@ -67,18 +73,46 @@ server <- function(input, output) {
    output$scatter_plot <- renderPlotly({
      # Dynamic selection based on the data
      plot_data <- brick %>%
-       mutate(variable = case_when(
-         input$x_var == "Min price" ~ min_price,
-         input$x_var == "Max price" ~ max_price,
-         input$x_var == "Avg price" ~ avg_price))
+       mutate(
+         Price = case_when(
+           input$x_var == "Min price" ~ min_price,
+           input$x_var == "Max price" ~ max_price,
+           input$x_var == "Avg price" ~ avg_price))
  
      # We create the interactive graph
-     p <- plot_ly(plot_data, x = ~variable, y = ~pieces, type = 'scatter', 
+     p <- plot_ly(plot_data, x = ~Price, y = ~pieces, type = 'scatter', 
                   mode = 'markers', color = ~category_name, 
-                  text = ~name, colors = category_colors,
-                  hoverinfo = 'text+x+y') #show name, x and y values
-     
-     p })}
+                  text = ~paste("Name: ", name, 
+                                "<br>Price: €", Price, 
+                                "<br>Year: ", year), 
+                  colors = category_colors,
+                  hoverinfo = 'text', #show name, x and y values
+                  marker = list(
+                    size = 8,
+                    line = list(
+                      width = 2
+                    )
+                  )) %>%
+       layout(
+         xaxis = list(
+           title = input$x_var,
+           titlefont = list(size = 16, color = 'black', family = 'Arial'),
+           tickfont = list(size = 12) 
+         ),
+         yaxis = list(
+           title = "Pieces",
+           titlefont = list(size = 16, color = 'black', family = 'Arial'),
+           tickfont = list(size = 12)
+         ),
+         legend = list(
+           bordercolor = 'black',
+           borderwidth = 2,
+           title = list(
+             text = "<b>Categories:</b>", # Legend title
+             font = list(size = 13, family = 'Arial')),
+           font = list(size = 12),
+           bgcolor = '#f2f2f2'))
+     p})}
  
  shinyApp(ui = ui, server = server)
  
