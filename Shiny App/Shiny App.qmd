@@ -1,12 +1,19 @@
 ---
-title: "Shiny App"
+title: ""
 format: html
 editor: visual
+runtime: shiny
 ---
 
-# Shiny App
+```{r, echo = FALSE, message=FALSE}
+library(tidyverse)
+library(shiny)
+library(janitor)
+library(plotly)
+```
 
-```{r}
+
+```{r, echo = FALSE, message = FALSE}
 brick <- read_csv("data/final_brick.csv")
 
 brick <- brick |> 
@@ -20,7 +27,8 @@ lego <- lego |>
          PieceCount = as.numeric(PieceCount)) |> 
   clean_names()
 ```
-```{r}
+
+```{r, echo = FALSE}
 category_colors <- c(
   "Star Wars" = "black",
   "Super Mario" = "#D62728",
@@ -42,8 +50,7 @@ theme_custom <- theme_minimal() +
     )
 ```
 
-
-```{r}
+```{r, echo = FALSE}
 # Shiny and plotly interactive graph
 ui <- fluidPage(
    titlePanel("Products per category, prices and pieces"),
@@ -52,7 +59,7 @@ ui <- fluidPage(
                    label = "Select the variable for the X axis:", 
                    choices = c("Min price", "Max price", "Avg price"),
                    selected = "Min price"),
-       plotlyOutput("scatter_plot", height = "600px")))
+       plotlyOutput("scatter_plot", width = "100%", height = "300px")))
  
  # Server for the app
 server <- function(input, output) {
@@ -76,4 +83,3 @@ server <- function(input, output) {
  shinyApp(ui = ui, server = server)
  
 ```
-
