@@ -846,7 +846,7 @@ products1 <- products1 |>
   unnest(history_data)
 ```
 
-While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: the function only managed to extract data for the first three products before the website blocked further requests.
+While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: the function only managed to extract data for the first fifteen products before the website blocked further requests.
 
 After attempting this process countless times, on different computers and using various approaches, we found that there was only one reliable way to make the function work:
 
@@ -1044,7 +1044,7 @@ p1
 
 This graph illustrates the evolution of LEGO set sizes over time, comparing different franchises based on the number of pieces per set across various years. Each franchise follows a distinct trend, showing how LEGO has adjusted set sizes over time for different themes.
 
-Star Wars and The Lord of the Rings (LOTR) appear to have some of the largest sets, with noticeable peaks in piece count, indicating the release of large, complex builds. Harry Potter also shows significant growth in set sizes, particularly in the later years. Meanwhile, Super Heroes, Disney, and Town exhibit more stable or modest growth, suggesting that their sets tend to remain in a lower piece range. Super Mario, being a newer franchise, has smaller sets overall, reflecting its recent introduction into the LEGO lineup.
+Star Wars and Harry Potter appear to have some of the largest sets, with noticeable peaks in piece count, indicating the release of large, complex builds. Super Heroes also shows significant growth in set sizes, particularly in the later years. Meanwhile, Lord of the Rings, Disney, and Town exhibit more stable or modest growth, suggesting that their sets tend to remain in a lower piece range. Super Mario, being a newer franchise, has smaller sets overall, reflecting its recent introduction into the LEGO lineup.
 
 This next code is designed to standardize franchise names and categorize LEGO sets by the number of pieces, allowing for a fair comparison of prices across sets with similar piece counts.
 
