@@ -846,7 +846,7 @@ products1 <- products1 |>
   unnest(history_data)
 ```
 
-While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: the function only managed to extract data for the first three products before the website blocked further requests.
+While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared: the function only managed to extract data for the first fifteen products before the website blocked further requests.
 
 After attempting this process countless times, on different computers and using various approaches, we found that there was only one reliable way to make the function work:
 
