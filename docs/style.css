@@ -1,0 +1,79 @@
+
+@import url("https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap");
+
+/*-- scss:defaults --*/
+
+/*-- scss:rules --*/
+/* GENERAL SLIDE STYLE */
+.reveal {
+  font-family: 'Roboto', sans-serif;
+  background: #e3000b; 
+  color: white;
+}
+
+.reveal p {
+  font-size: 0.8em;
+}
+
+/* HEADINGS */
+.reveal h1, .reveal h2, .reveal h3 {
+  color: white;
+  font-weight: bold;
+  text-shadow: 3px 3px 0px #feec00;
+  font-size: 1.5em;
+}
+
+.reveal h2 {
+  font-size: 1.25em;
+}
+
+.reveal h3 {
+  font-size: 1em;
+}
+
+/* SLIDE TITLES */
+.reveal h1 {
+  color: white;
+  border-bottom: 5px solid #feec00;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+
+/* LINKS */
+.reveal a {
+  color: white; 
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.reveal a:hover {
+  color: #feec00; /* LEGO yellow */
+  text-decoration: underline;
+}
+
+/* CODE BLOCKS */
+.reveal pre {
+  background: #f8f9fa; 
+  border-left: 5px solid #feec00;
+  padding: 10px;
+}
+
+/* BUTTON STYLE */
+.reveal .button {
+  background-color: #feec00; 
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+/* BOXED SECTIONS */
+.reveal .block {
+  background-color: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 5px 5px 0px #feec00;
+}
+
+
