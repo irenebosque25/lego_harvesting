@@ -4,7 +4,7 @@ subtitle: "Data Harvesting 2025"
 author: "Pablo Aísa and Irene Bosque"
 format: 
   revealjs: 
-    theme: lego.css
+    theme: style.css
     transition: slide
     menu: false
 editor: visual
@@ -42,6 +42,7 @@ Scraping two webs:
 ::: {style="float: right; width: 100%;"}
 <img src="images/LEGO_logo.svg.png" width="10%"/>
 :::
+
 ::: {style="font-size: 30px;"}
 -   [Bricklink](https://www.bricklink.com/catalogTree.asp?itemType=S): four different hyperlinks
 :::
@@ -49,7 +50,6 @@ Scraping two webs:
 ::: {style="float: right; width: 100%;"}
 <img src="images/bricklink.png" width="20%"/>
 :::
-
 
 ------------------------------------------------------------------------
 
@@ -94,7 +94,7 @@ Price Guide – Last 6 Months Sales:
 ## Three first hyperlinks
 
 ::: {style="font-size: 25px;"}
-- Table with all products, pieces, years, sets and the link that lead us to the product prices
+-   Table with all products, pieces, years, sets and the link that lead us to the product prices
 :::
 
 ::: {style="text-align: center;"}
@@ -113,11 +113,9 @@ Price Guide – Last 6 Months Sales:
 
 ## Reinforced security measures
 
-
 ::: {style="font-size: 35px;"}
 The code randomizes the User-Agent with each request.
 :::
-
 
 ```{r, eval = FALSE, echo = TRUE}
 user_agents <- c(
@@ -221,7 +219,7 @@ pieces_category <- all_products |>
 ## Final solution
 
 ::: {style="font-size: 35px;"}
-Once we had the 15 products we applied the function to each category selected with the help of a VPN. 
+Once we had the 15 products we applied the function to each category selected with the help of a VPN.
 :::
 
 ```{r, eval = FALSE, echo = TRUE}
