@@ -11,6 +11,10 @@
   color: white;
 }
 
+.reveal p {
+  font-size: 0.8em;
+}
+
 /* HEADINGS */
 .reveal h1, .reveal h2, .reveal h3 {
   color: white;
@@ -64,10 +68,6 @@
   text-transform: uppercase;
 }
 
-.reveal .button:hover {
-  background-color: #feec00; 
-}
-
 /* BOXED SECTIONS */
 .reveal .block {
   background-color: white;
@@ -76,12 +76,4 @@
   box-shadow: 5px 5px 0px #feec00;
 }
 
-/* INDEX BUTTON */
-.reveal .slide-menu-button {
-  color: #feec00;
-}
-
-.reveal p {
-  font-size: 0.8em;
-}
 

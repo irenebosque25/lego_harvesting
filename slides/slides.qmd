@@ -4,8 +4,9 @@ subtitle: "Data Harvesting 2025"
 author: "Pablo Aísa and Irene Bosque"
 format: 
   revealjs: 
-    theme: custom.css
+    theme: lego.css
     transition: slide
+    menu: false
 editor: visual
 ---
 
@@ -339,7 +340,14 @@ final_products <- final_products |>
 ## Final output
 
 ::: {style="text-align: center;"}
-<img src="images/lego_harvesting.jpg" width="200%"/>
+```{r}
+library(kableExtra)
+
+kable(brick[1:10, ]) |> 
+  kable_styling(font_size = 12, bootstrap_options = c("striped", "hover")) |> 
+  row_spec(0, bold = TRUE, color = "black", background = "white") |> 
+  column_spec(1:ncol(brick), color = "black", background = "white")
+```
 :::
 
 ------------------------------------------------------------------------
