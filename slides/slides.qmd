@@ -37,9 +37,11 @@ Scraping two webs: <span style="font-size: 40%;">
 
 -   LEGO official [webpage](https://www.lego.com/es-es) (Spain)
 
--   [Bricklink](https://www.bricklink.com/catalogTree.asp?itemType=S):
+![](images/LEGO_logo.svg.png){width="200"}
 
-    -   Four Different Hyperlinks
+-   [Bricklink](https://www.bricklink.com/catalogTree.asp?itemType=S): four different hyperlinks
+
+![](images/bricklink.png){width="286"}
 
 </span>
 
