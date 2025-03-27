@@ -409,41 +409,48 @@ Pablo Aísa and Irene Bosque
 </section>
 <section id="the-project" class="slide level2">
 <h2>The project</h2>
-<p>Scraping two webs: <span style="font-size: 40%;"></span></p>
+<p>Scraping two webs:</p>
+<div style="font-size: 30px;">
 <ul>
 <li>LEGO official <a href="https://www.lego.com/es-es">webpage</a> (Spain)</li>
 </ul>
-<p><img data-src="images/LEGO_logo.svg.png" width="200"></p>
+</div>
+<div style="float: right; width: 100%;">
+<p><img src="images/LEGO_logo.svg.png" width="10%"></p>
+</div>
+<div style="font-size: 30px;">
 <ul>
 <li><a href="https://www.bricklink.com/catalogTree.asp?itemType=S">Bricklink</a>: four different hyperlinks</li>
 </ul>
-<p><img data-src="images/bricklink.png" width="256"></p>
-<p></p>
+</div>
+<div style="float: right; width: 100%;">
+<p><img src="images/bricklink.png" width="20%"></p>
+</div>
 </section>
 <section class="slide level2">
 
-<p>Categories:</p>
+<p>Main Category Page:</p>
 <div style="float: right; width: 75%;">
 <p><img src="images/bricklink first hyperlink.png" width="100%"></p>
 </div>
 </section>
 <section class="slide level2">
 
-<p>All products:</p>
+<p>Category-Specific Product Listings:</p>
 <div style="float: right; width: 75%;">
 <p><img src="images/bricklink hyperlink2.png" width="100%"></p>
 </div>
 </section>
 <section class="slide level2">
 
-<p>One single product:</p>
+<p>Individual Product Details:</p>
 <div style="float: right; width: 75%;">
 <p><img src="images/bricklink hyperlink3.png" width="100%"></p>
 </div>
 </section>
 <section class="slide level2">
 
-<p>Price table:</p>
+<p>Price Guide – Last 6 Months Sales:</p>
 <div style="float: right; width: 75%;">
 <p><img src="images/bricklink hyperlink 4.png" width="100%"></p>
 </div>
@@ -453,36 +460,43 @@ Pablo Aísa and Irene Bosque
 </section>
 <section>
 <section id="scrapping-process" class="title-slide slide level1 center">
-<h1>Scrapping process</h1>
+<h1>SCRAPPING PROCESS</h1>
 
 </section>
-<section id="first-steps" class="slide level2">
-<h2>First steps</h2>
-<p>We succeded without big issues scraping all of the first three hyperlinks: - Table with all products, pieces, years, sets and the link that lead us to the product prices</p>
+<section id="three-first-hyperlinks" class="slide level2">
+<h2>Three first hyperlinks</h2>
+<div style="font-size: 25px;">
+<ul>
+<li>Table with all products, pieces, years, sets and the link that lead us to the product prices</li>
+</ul>
+</div>
 <div style="text-align: center;">
 <p><img src="images/easy scrap.png" width="200%"></p>
 </div>
 </section>
-<section id="first-problems-blocks" class="slide level2">
-<h2>First Problems: blocks</h2>
+<section id="biggest-problem-last-hyperlink" class="slide level2">
+<h2>Biggest Problem: Last Hyperlink</h2>
 <div style="text-align: center;">
 <p><img data-src="images/block.jpg"></p>
 </div>
 </section>
-<section id="solution-reinforced-security-measures" class="slide level2">
-<h2>Solution: reinforced security measures</h2>
-<p>First, to avoid detection, the code randomizes the User-Agent with each request.</p>
+<section id="reinforced-security-measures" class="slide level2">
+<h2>Reinforced security measures</h2>
+<div style="font-size: 35px;">
+<p>The code randomizes the User-Agent with each request.</p>
+</div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a><span class="co"># User-agents to rotate and not being blocked</span></span>
-<span id="cb1-2"><a href=""></a>user_agents <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb1-3"><a href=""></a>  <span class="st">"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"</span>,</span>
-<span id="cb1-4"><a href=""></a>  <span class="st">"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"</span>,</span>
-<span id="cb1-5"><a href=""></a>  <span class="st">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href=""></a>user_agents <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb1-2"><a href=""></a>  <span class="st">"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"</span>,</span>
+<span id="cb1-3"><a href=""></a>  <span class="st">"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"</span>,</span>
+<span id="cb1-4"><a href=""></a>  <span class="st">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section class="slide level2">
-
-<p>Additionally, the script adds custom headers, including Accept-Language and Referer</p>
+<section id="reinforced-security-measures-1" class="slide level2">
+<h2>Reinforced security measures</h2>
+<div style="font-size: 35px;">
+<p>The script adds custom headers, including Accept-Language and Referer</p>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href=""></a> headers <span class="ot">&lt;-</span> <span class="fu">add_headers</span>(</span>
 <span id="cb2-2"><a href=""></a>    <span class="st">"User-Agent"</span> <span class="ot">=</span> random_user_agent,</span>
@@ -491,9 +505,11 @@ Pablo Aísa and Irene Bosque
 <span id="cb2-5"><a href=""></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section class="slide level2">
-
-<p>To further increase stealth, sessions and cookies are handled using html_session().</p>
+<section id="reinforced-security-measures-2" class="slide level2">
+<h2>Reinforced security measures</h2>
+<div style="font-size: 35px;">
+<p>Sessions and cookies are handled using html_session().</p>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a> session <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">html_session</span>(price_link, headers), </span>
 <span id="cb3-2"><a href=""></a>                      <span class="at">error =</span> <span class="cf">function</span>(e) <span class="fu">return</span>(<span class="cn">NULL</span>))</span>
@@ -511,9 +527,11 @@ Pablo Aísa and Irene Bosque
 <span id="cb3-14"><a href=""></a>                  <span class="at">Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Qty_Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Max_Price =</span> <span class="cn">NA</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section class="slide level2">
-
-<p>Finally, randomized delays between requests help avoid bot detection.</p>
+<section id="reinforced-security-measures-3" class="slide level2">
+<h2>Reinforced security measures</h2>
+<div style="font-size: 35px;">
+<p>Randomized delays between requests help avoid bot detection.</p>
+</div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a>  counter <span class="ot">&lt;&lt;-</span> counter <span class="sc">+</span> <span class="dv">1</span> <span class="co"># product count</span></span>
 <span id="cb4-2"><a href=""></a>  <span class="cf">if</span> (counter <span class="sc">%%</span> <span class="dv">7</span> <span class="sc">==</span> <span class="dv">0</span>) {</span>
@@ -527,168 +545,89 @@ Pablo Aísa and Irene Bosque
 <span id="cb4-10"><a href=""></a>  <span class="fu">return</span>(data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="final-function" class="slide level2">
-<h2>Final function</h2>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a><span class="co"># User-agents to rotate and not being blocked</span></span>
-<span id="cb5-2"><a href=""></a>user_agents <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb5-3"><a href=""></a>  <span class="st">"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"</span>,</span>
-<span id="cb5-4"><a href=""></a>  <span class="st">"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"</span>,</span>
-<span id="cb5-5"><a href=""></a>  <span class="st">"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0"</span>)</span>
-<span id="cb5-6"><a href=""></a></span>
-<span id="cb5-7"><a href=""></a>counter <span class="ot">&lt;-</span> <span class="dv">0</span> <span class="co"># To count the number of products and then do a larger pause each 7 products scrapped</span></span>
-<span id="cb5-8"><a href=""></a></span>
-<span id="cb5-9"><a href=""></a>history_data <span class="ot">&lt;-</span> <span class="cf">function</span>(price_link) {</span>
-<span id="cb5-10"><a href=""></a>  random_user_agent <span class="ot">&lt;-</span> <span class="fu">sample</span>(user_agents, <span class="dv">1</span>) <span class="co"># random user</span></span>
-<span id="cb5-11"><a href=""></a>  </span>
-<span id="cb5-12"><a href=""></a>  headers <span class="ot">&lt;-</span> <span class="fu">add_headers</span>(</span>
-<span id="cb5-13"><a href=""></a>    <span class="st">"User-Agent"</span> <span class="ot">=</span> random_user_agent,</span>
-<span id="cb5-14"><a href=""></a>    <span class="st">"Accept-Language"</span> <span class="ot">=</span> <span class="st">"en-US,en;q=0.9"</span>, <span class="co"># simulate a real browser</span></span>
-<span id="cb5-15"><a href=""></a>    <span class="st">"Referer"</span> <span class="ot">=</span> <span class="st">"https://google.com"</span></span>
-<span id="cb5-16"><a href=""></a>    )</span>
-<span id="cb5-17"><a href=""></a>  <span class="co"># create a log in with cookier and user-agent</span></span>
-<span id="cb5-18"><a href=""></a>  session <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">html_session</span>(price_link, headers), </span>
-<span id="cb5-19"><a href=""></a>                      <span class="at">error =</span> <span class="cf">function</span>(e) <span class="fu">return</span>(<span class="cn">NULL</span>))</span>
-<span id="cb5-20"><a href=""></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(session)) {</span>
-<span id="cb5-21"><a href=""></a>    <span class="fu">print</span>(<span class="st">"Error logging in. Probably blocked."</span>)</span>
-<span id="cb5-22"><a href=""></a>    <span class="fu">return</span>(<span class="fu">tibble</span>(<span class="at">Times_Sold =</span> <span class="cn">NA</span>, <span class="at">Total_Qty =</span> <span class="cn">NA</span>, <span class="at">Min_Price =</span> <span class="cn">NA</span>, </span>
-<span id="cb5-23"><a href=""></a>                  <span class="at">Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Qty_Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Max_Price =</span> <span class="cn">NA</span>))</span>
-<span id="cb5-24"><a href=""></a>  }</span>
-<span id="cb5-25"><a href=""></a>  price_history_page <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(<span class="fu">read_html</span>(session), </span>
-<span id="cb5-26"><a href=""></a>                                 <span class="at">error =</span> <span class="cf">function</span>(e) <span class="fu">return</span>(<span class="cn">NULL</span>))</span>
-<span id="cb5-27"><a href=""></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(price_history_page)) { <span class="co"># read the html</span></span>
-<span id="cb5-28"><a href=""></a>    <span class="fu">print</span>(<span class="st">"Page blocked or CAPTCHA detected"</span>)</span>
-<span id="cb5-29"><a href=""></a>    <span class="fu">writeLines</span>(<span class="fu">as.character</span>(session), <span class="st">"error_page.html"</span>)</span>
-<span id="cb5-30"><a href=""></a>    <span class="fu">return</span>(<span class="fu">tibble</span>(<span class="at">Times_Sold =</span> <span class="cn">NA</span>, <span class="at">Total_Qty =</span> <span class="cn">NA</span>, <span class="at">Min_Price =</span> <span class="cn">NA</span>, </span>
-<span id="cb5-31"><a href=""></a>                  <span class="at">Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Qty_Avg_Price =</span> <span class="cn">NA</span>, <span class="at">Max_Price =</span> <span class="cn">NA</span>))</span>
-<span id="cb5-32"><a href=""></a>  }</span>
-<span id="cb5-33"><a href=""></a>  <span class="co"># Data from Xpaths</span></span>
-<span id="cb5-34"><a href=""></a>  data <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb5-35"><a href=""></a>    <span class="at">Times_Sold =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-36"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[1]//td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-37"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-38"><a href=""></a>    </span>
-<span id="cb5-39"><a href=""></a>    <span class="at">Total_Qty =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-40"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[2]//td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-41"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-42"><a href=""></a>    </span>
-<span id="cb5-43"><a href=""></a>    <span class="at">Min_Price =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-44"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[3]/td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-45"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-46"><a href=""></a>    </span>
-<span id="cb5-47"><a href=""></a>    <span class="at">Avg_Price =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-48"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[4]//td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-49"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-50"><a href=""></a>    </span>
-<span id="cb5-51"><a href=""></a>    <span class="at">Qty_Avg_Price =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-52"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[5]//td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-53"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-54"><a href=""></a>    </span>
-<span id="cb5-55"><a href=""></a>    <span class="at">Max_Price =</span> price_history_page <span class="sc">%&gt;%</span></span>
-<span id="cb5-56"><a href=""></a>      <span class="fu">xml_find_first</span>(<span class="st">"//table[@class='fv']//tr[6]//td[2]/b"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-57"><a href=""></a>      <span class="fu">html_text</span>(<span class="at">trim =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb5-58"><a href=""></a>  </span>
-<span id="cb5-59"><a href=""></a>  counter <span class="ot">&lt;&lt;-</span> counter <span class="sc">+</span> <span class="dv">1</span> <span class="co"># product count</span></span>
-<span id="cb5-60"><a href=""></a>  <span class="cf">if</span> (counter <span class="sc">%%</span> <span class="dv">7</span> <span class="sc">==</span> <span class="dv">0</span>) {</span>
-<span id="cb5-61"><a href=""></a>    pause_time <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="at">min =</span> <span class="dv">20</span>, <span class="at">max =</span> <span class="dv">30</span>) <span class="co"># longer pause every 7</span></span>
-<span id="cb5-62"><a href=""></a>  } <span class="cf">else</span> {</span>
-<span id="cb5-63"><a href=""></a>    pause_time <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="at">min =</span> <span class="dv">10</span>, <span class="at">max =</span> <span class="dv">15</span>) <span class="co"># normal pause</span></span>
-<span id="cb5-64"><a href=""></a>  }</span>
-<span id="cb5-65"><a href=""></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Waiting"</span>, </span>
-<span id="cb5-66"><a href=""></a>              <span class="fu">round</span>(pause_time, <span class="dv">2</span>), <span class="st">"seconds before the next request..."</span>))</span>
-<span id="cb5-67"><a href=""></a>  <span class="fu">Sys.sleep</span>(pause_time)</span>
-<span id="cb5-68"><a href=""></a>  <span class="fu">return</span>(data)</span>
-<span id="cb5-69"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="second-try" class="slide level2">
+<h2>Second try</h2>
+<div style="font-size: 35px;">
+<p>While at first, it seemed to work correctly, when we expanded the process, the issue reaperead:</p>
 </div>
-</section>
-<section class="slide level2">
-
-<p>While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared:</p>
 <div style="text-align: center;">
 <p><img src="images/NA table.png" width="200%"></p>
 </div>
 </section>
 <section id="final-solution" class="slide level2">
 <h2>Final solution</h2>
-<p>For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.</p>
+<div style="font-size: 35px;">
+<p>For each category, we selected the 15 products with the highest quantity of pieces available while also ensuring that they were from before 2020.</p>
+</div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a>pieces_category <span class="ot">&lt;-</span> all_products <span class="sc">|&gt;</span> </span>
-<span id="cb6-2"><a href=""></a>  <span class="fu">filter</span>(year <span class="sc">&lt;=</span> <span class="dv">2020</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb6-3"><a href=""></a>  <span class="fu">group_by</span>(category_name) <span class="sc">|&gt;</span>         </span>
-<span id="cb6-4"><a href=""></a>  <span class="fu">slice_max</span>(<span class="at">order_by =</span> Pieces, <span class="at">n =</span> <span class="dv">15</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb6-5"><a href=""></a>  <span class="fu">ungroup</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href=""></a>pieces_category <span class="ot">&lt;-</span> all_products <span class="sc">|&gt;</span> </span>
+<span id="cb5-2"><a href=""></a>  <span class="fu">filter</span>(year <span class="sc">&lt;=</span> <span class="dv">2020</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb5-3"><a href=""></a>  <span class="fu">group_by</span>(category_name) <span class="sc">|&gt;</span>         </span>
+<span id="cb5-4"><a href=""></a>  <span class="fu">slice_max</span>(<span class="at">order_by =</span> Pieces, <span class="at">n =</span> <span class="dv">15</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb5-5"><a href=""></a>  <span class="fu">ungroup</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section class="slide level2">
-
-<p>Once we have the 15 products we applied the function to each category selected with the help of a VPN. In order to get the 15 products of each category we had to change the country each time we execute the code</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href=""></a><span class="co"># Harry Potter: Rome, Italy</span></span>
-<span id="cb7-2"><a href=""></a>products_hp <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-3"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Harry Potter"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-4"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-5"><a href=""></a></span>
-<span id="cb7-6"><a href=""></a>products1 <span class="ot">&lt;-</span> products_hp <span class="sc">|&gt;</span> </span>
-<span id="cb7-7"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-8"><a href=""></a></span>
-<span id="cb7-9"><a href=""></a><span class="co"># Disney: Frankfurt, Germany</span></span>
-<span id="cb7-10"><a href=""></a>products_dis <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-11"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Disney"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-12"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-13"><a href=""></a></span>
-<span id="cb7-14"><a href=""></a>products2 <span class="ot">&lt;-</span> products_dis <span class="sc">|&gt;</span> </span>
-<span id="cb7-15"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-16"><a href=""></a></span>
-<span id="cb7-17"><a href=""></a><span class="co"># Star Wars: Paris, France</span></span>
-<span id="cb7-18"><a href=""></a>products_sw <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-19"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Star Wars"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-20"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-21"><a href=""></a></span>
-<span id="cb7-22"><a href=""></a>products3 <span class="ot">&lt;-</span> products_sw <span class="sc">|&gt;</span> </span>
-<span id="cb7-23"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-24"><a href=""></a></span>
-<span id="cb7-25"><a href=""></a><span class="co"># LOTR: Dublin, Ireland</span></span>
-<span id="cb7-26"><a href=""></a>products_lotr <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-27"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"The Hobbit and The Lord of the Rings"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-28"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-29"><a href=""></a></span>
-<span id="cb7-30"><a href=""></a>products4 <span class="ot">&lt;-</span> products_lotr <span class="sc">|&gt;</span> </span>
-<span id="cb7-31"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-32"><a href=""></a></span>
-<span id="cb7-33"><a href=""></a><span class="co"># Town: London, UK</span></span>
-<span id="cb7-34"><a href=""></a>products_town <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-35"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Town"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-36"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-37"><a href=""></a></span>
-<span id="cb7-38"><a href=""></a>products5 <span class="ot">&lt;-</span> products_town <span class="sc">|&gt;</span> </span>
-<span id="cb7-39"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-40"><a href=""></a></span>
-<span id="cb7-41"><a href=""></a><span class="co"># Super Mario: Praga, Czech Republic</span></span>
-<span id="cb7-42"><a href=""></a>products_sm <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-43"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Super Mario"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-44"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-45"><a href=""></a></span>
-<span id="cb7-46"><a href=""></a>products6 <span class="ot">&lt;-</span> products_sm <span class="sc">|&gt;</span> </span>
-<span id="cb7-47"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
-<span id="cb7-48"><a href=""></a></span>
-<span id="cb7-49"><a href=""></a><span class="co"># Super Heroes (Marvel &amp; DC): Milan, Italy</span></span>
-<span id="cb7-50"><a href=""></a>products_sh <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
-<span id="cb7-51"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Super Heroes"</span>) <span class="sc">|&gt;</span> </span>
-<span id="cb7-52"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
-<span id="cb7-53"><a href=""></a></span>
-<span id="cb7-54"><a href=""></a>products7 <span class="ot">&lt;-</span> products_sh <span class="sc">|&gt;</span> </span>
-<span id="cb7-55"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="final-solution-1" class="slide level2">
+<h2>Final solution</h2>
+<div style="font-size: 35px;">
+<p>Once we had the 15 products we applied the function to each category selected with the help of a VPN.</p>
 </div>
-</section>
-<section class="slide level2">
-
-<p>Finally we merge everything into one single dataset</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href=""></a>final_products <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(products1, products2, products3, products4, </span>
-<span id="cb8-2"><a href=""></a>                         products5, products6, products7)</span>
-<span id="cb8-3"><a href=""></a></span>
-<span id="cb8-4"><a href=""></a>final_products <span class="ot">&lt;-</span> final_products <span class="sc">|&gt;</span> </span>
-<span id="cb8-5"><a href=""></a>  <span class="fu">clean_names</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href=""></a><span class="co"># Harry Potter: Rome, Italy</span></span>
+<span id="cb6-2"><a href=""></a>products_hp <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-3"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Harry Potter"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-4"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-5"><a href=""></a></span>
+<span id="cb6-6"><a href=""></a>products1 <span class="ot">&lt;-</span> products_hp <span class="sc">|&gt;</span> </span>
+<span id="cb6-7"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-8"><a href=""></a></span>
+<span id="cb6-9"><a href=""></a><span class="co"># Disney: Frankfurt, Germany</span></span>
+<span id="cb6-10"><a href=""></a>products_dis <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-11"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Disney"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-12"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-13"><a href=""></a></span>
+<span id="cb6-14"><a href=""></a>products2 <span class="ot">&lt;-</span> products_dis <span class="sc">|&gt;</span> </span>
+<span id="cb6-15"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-16"><a href=""></a></span>
+<span id="cb6-17"><a href=""></a><span class="co"># Star Wars: Paris, France</span></span>
+<span id="cb6-18"><a href=""></a>products_sw <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-19"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Star Wars"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-20"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-21"><a href=""></a></span>
+<span id="cb6-22"><a href=""></a>products3 <span class="ot">&lt;-</span> products_sw <span class="sc">|&gt;</span> </span>
+<span id="cb6-23"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-24"><a href=""></a></span>
+<span id="cb6-25"><a href=""></a><span class="co"># LOTR: Dublin, Ireland</span></span>
+<span id="cb6-26"><a href=""></a>products_lotr <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-27"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"The Hobbit and The Lord of the Rings"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-28"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-29"><a href=""></a></span>
+<span id="cb6-30"><a href=""></a>products4 <span class="ot">&lt;-</span> products_lotr <span class="sc">|&gt;</span> </span>
+<span id="cb6-31"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-32"><a href=""></a></span>
+<span id="cb6-33"><a href=""></a><span class="co"># Town: London, UK</span></span>
+<span id="cb6-34"><a href=""></a>products_town <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-35"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Town"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-36"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-37"><a href=""></a></span>
+<span id="cb6-38"><a href=""></a>products5 <span class="ot">&lt;-</span> products_town <span class="sc">|&gt;</span> </span>
+<span id="cb6-39"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-40"><a href=""></a></span>
+<span id="cb6-41"><a href=""></a><span class="co"># Super Mario: Praga, Czech Republic</span></span>
+<span id="cb6-42"><a href=""></a>products_sm <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-43"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Super Mario"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-44"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-45"><a href=""></a></span>
+<span id="cb6-46"><a href=""></a>products6 <span class="ot">&lt;-</span> products_sm <span class="sc">|&gt;</span> </span>
+<span id="cb6-47"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span>
+<span id="cb6-48"><a href=""></a></span>
+<span id="cb6-49"><a href=""></a><span class="co"># Super Heroes (Marvel &amp; DC): Milan, Italy</span></span>
+<span id="cb6-50"><a href=""></a>products_sh <span class="ot">&lt;-</span> pieces_category <span class="sc">|&gt;</span> </span>
+<span id="cb6-51"><a href=""></a>  <span class="fu">filter</span>(category_name <span class="sc">==</span> <span class="st">"Super Heroes"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-52"><a href=""></a>  <span class="fu">mutate</span>(<span class="at">history_data =</span> <span class="fu">map</span>(price_link, history_data)) </span>
+<span id="cb6-53"><a href=""></a></span>
+<span id="cb6-54"><a href=""></a>products7 <span class="ot">&lt;-</span> products_sh <span class="sc">|&gt;</span> </span>
+<span id="cb6-55"><a href=""></a>  <span class="fu">unnest</span>(history_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="final-output" class="slide level2">
@@ -878,14 +817,14 @@ Pablo Aísa and Irene Bosque
 </section></section>
 <section>
 <section id="data-visualizations" class="title-slide slide level1 center">
-<h1>Data visualizations</h1>
+<h1>DATA VISUALIZATIONS</h1>
 
 </section>
 <section class="slide level2">
 
 <h3 id="evolution-of-pieces-per-category">Evolution of pieces per category</h3>
 
-<img data-src="slides_files/figure-revealjs/unnamed-chunk-13-1.png" width="960" class="r-stretch"></section>
+<img data-src="slides_files/figure-revealjs/unnamed-chunk-11-1.png" width="960" class="r-stretch"></section>
 <section class="slide level2">
 
 <h3 id="distribution-of-resale-prices">Distribution of Resale Prices</h3>
@@ -897,7 +836,7 @@ Pablo Aísa and Irene Bosque
 <div class="cell-output-display">
 <div>
 <figure>
-<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-15-1.png" width="960"></p>
+<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-13-1.png" width="960"></p>
 </figure>
 </div>
 </div>
@@ -909,7 +848,7 @@ Pablo Aísa and Irene Bosque
 <div class="cell-output-display">
 <div>
 <figure>
-<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-16-1.png" width="960"></p>
+<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-14-1.png" width="960"></p>
 </figure>
 </div>
 </div>
@@ -921,7 +860,7 @@ Pablo Aísa and Irene Bosque
 <div class="cell-output-display">
 <div>
 <figure>
-<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-17-1.png" width="960"></p>
+<p><img data-src="slides_files/figure-revealjs/unnamed-chunk-15-1.png" width="960"></p>
 </figure>
 </div>
 </div>
@@ -934,11 +873,11 @@ Pablo Aísa and Irene Bosque
 
 <h3 id="investment">Investment</h3>
 
-<img data-src="slides_files/figure-revealjs/unnamed-chunk-18-1.png" width="960" class="r-stretch"></section>
-<section class="slide level2">
-
-<div style="display: flex; justify-content: center; align-items: center; height: 120vh">
-<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" width="900" height="450" style="border: none;">
+<img data-src="slides_files/figure-revealjs/unnamed-chunk-16-1.png" width="960" class="r-stretch"></section>
+<section id="interactive-plot" class="slide level2">
+<h2>Interactive Plot</h2>
+<div style="display: flex; justify-content: center; align-items: center; height: 110vh">
+<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" width="1000" height="500" style="border: none;">
 </iframe>
 </div>
 <div class="quarto-auto-generated-content">

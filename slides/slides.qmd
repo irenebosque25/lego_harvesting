@@ -33,21 +33,27 @@ lego <- read_csv("../data/lego_official.csv")
 
 ## The project
 
-Scraping two webs: <span style="font-size: 40%;">
+Scraping two webs:
 
+::: {style="font-size: 30px;"}
 -   LEGO official [webpage](https://www.lego.com/es-es) (Spain)
+:::
 
-![](images/LEGO_logo.svg.png){width="200"}
-
+::: {style="float: right; width: 100%;"}
+<img src="images/LEGO_logo.svg.png" width="10%"/>
+:::
+::: {style="font-size: 30px;"}
 -   [Bricklink](https://www.bricklink.com/catalogTree.asp?itemType=S): four different hyperlinks
+:::
 
-![](images/bricklink.png){width="286"}
+::: {style="float: right; width: 100%;"}
+<img src="images/bricklink.png" width="20%"/>
+:::
 
-</span>
 
 ------------------------------------------------------------------------
 
-Categories:
+Main Category Page:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink first hyperlink.png" width="100%"/>
@@ -55,7 +61,7 @@ Categories:
 
 ------------------------------------------------------------------------
 
-All products:
+Category-Specific Product Listings:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink2.png" width="100%"/>
@@ -63,7 +69,7 @@ All products:
 
 ------------------------------------------------------------------------
 
-One single product:
+Individual Product Details:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink3.png" width="100%"/>
@@ -71,7 +77,7 @@ One single product:
 
 ------------------------------------------------------------------------
 
-Price table:
+Price Guide – Last 6 Months Sales:
 
 ::: {style="float: right; width: 75%;"}
 <img src="images/bricklink hyperlink 4.png" width="100%"/>
@@ -81,13 +87,15 @@ Price table:
 
 ##  {.center .large}
 
-# Scrapping process
+# SCRAPPING PROCESS
 
 ------------------------------------------------------------------------
 
-## First steps
+## Three first hyperlinks
 
-We succeded without big issues scraping all of the first three hyperlinks: - Table with all products, pieces, years, sets and the link that lead us to the product prices
+::: {style="font-size: 25px;"}
+- Table with all products, pieces, years, sets and the link that lead us to the product prices
+:::
 
 ::: {style="text-align: center;"}
 <img src="images/easy scrap.png" width="200%"/>
@@ -95,7 +103,7 @@ We succeded without big issues scraping all of the first three hyperlinks: - Tab
 
 ------------------------------------------------------------------------
 
-## First Problems: blocks
+## Biggest Problem: Last Hyperlink
 
 ::: {style="text-align: center;"}
 ![](images/block.jpg)
@@ -103,12 +111,15 @@ We succeded without big issues scraping all of the first three hyperlinks: - Tab
 
 ------------------------------------------------------------------------
 
-## Solution: reinforced security measures
+## Reinforced security measures
 
-First, to avoid detection, the code randomizes the User-Agent with each request.
+
+::: {style="font-size: 35px;"}
+The code randomizes the User-Agent with each request.
+:::
+
 
 ```{r, eval = FALSE, echo = TRUE}
-# User-agents to rotate and not being blocked
 user_agents <- c(
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
@@ -117,7 +128,11 @@ user_agents <- c(
 
 ------------------------------------------------------------------------
 
-Additionally, the script adds custom headers, including Accept-Language and Referer
+## Reinforced security measures
+
+::: {style="font-size: 35px;"}
+The script adds custom headers, including Accept-Language and Referer
+:::
 
 ```{r, eval = FALSE, echo = TRUE}
  headers <- add_headers(
@@ -129,7 +144,11 @@ Additionally, the script adds custom headers, including Accept-Language and Refe
 
 ------------------------------------------------------------------------
 
-To further increase stealth, sessions and cookies are handled using html_session().
+## Reinforced security measures
+
+::: {style="font-size: 35px;"}
+Sessions and cookies are handled using html_session().
+:::
 
 ```{r, eval = FALSE, echo = TRUE}
  session <- tryCatch(html_session(price_link, headers), 
@@ -150,7 +169,11 @@ To further increase stealth, sessions and cookies are handled using html_session
 
 ------------------------------------------------------------------------
 
-Finally, randomized delays between requests help avoid bot detection.
+## Reinforced security measures
+
+::: {style="font-size: 35px;"}
+Randomized delays between requests help avoid bot detection.
+:::
 
 ```{r, eval = FALSE, echo = TRUE}
   counter <<- counter + 1 # product count
@@ -167,83 +190,11 @@ Finally, randomized delays between requests help avoid bot detection.
 
 ------------------------------------------------------------------------
 
-## Final function
+## Second try
 
-```{r, eval = FALSE, echo = TRUE}
-# User-agents to rotate and not being blocked
-user_agents <- c(
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Firefox/89.0")
-
-counter <- 0 # To count the number of products and then do a larger pause each 7 products scrapped
-
-history_data <- function(price_link) {
-  random_user_agent <- sample(user_agents, 1) # random user
-  
-  headers <- add_headers(
-    "User-Agent" = random_user_agent,
-    "Accept-Language" = "en-US,en;q=0.9", # simulate a real browser
-    "Referer" = "https://google.com"
-    )
-  # create a log in with cookier and user-agent
-  session <- tryCatch(html_session(price_link, headers), 
-                      error = function(e) return(NULL))
-  if (is.null(session)) {
-    print("Error logging in. Probably blocked.")
-    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
-                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
-  }
-  price_history_page <- tryCatch(read_html(session), 
-                                 error = function(e) return(NULL))
-  if (is.null(price_history_page)) { # read the html
-    print("Page blocked or CAPTCHA detected")
-    writeLines(as.character(session), "error_page.html")
-    return(tibble(Times_Sold = NA, Total_Qty = NA, Min_Price = NA, 
-                  Avg_Price = NA, Qty_Avg_Price = NA, Max_Price = NA))
-  }
-  # Data from Xpaths
-  data <- tibble(
-    Times_Sold = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[1]//td[2]/b") %>%
-      html_text(trim = TRUE),
-    
-    Total_Qty = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[2]//td[2]/b") %>%
-      html_text(trim = TRUE),
-    
-    Min_Price = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[3]/td[2]/b") %>%
-      html_text(trim = TRUE),
-    
-    Avg_Price = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[4]//td[2]/b") %>%
-      html_text(trim = TRUE),
-    
-    Qty_Avg_Price = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[5]//td[2]/b") %>%
-      html_text(trim = TRUE),
-    
-    Max_Price = price_history_page %>%
-      xml_find_first("//table[@class='fv']//tr[6]//td[2]/b") %>%
-      html_text(trim = TRUE))
-  
-  counter <<- counter + 1 # product count
-  if (counter %% 7 == 0) {
-    pause_time <- runif(1, min = 20, max = 30) # longer pause every 7
-  } else {
-    pause_time <- runif(1, min = 10, max = 15) # normal pause
-  }
-  print(paste("Waiting", 
-              round(pause_time, 2), "seconds before the next request..."))
-  Sys.sleep(pause_time)
-  return(data)
-}
-```
-
-------------------------------------------------------------------------
-
-While at first, it seemed to work correctly, when we expanded the process to 50 products, the issue reappeared:
+::: {style="font-size: 35px;"}
+While at first, it seemed to work correctly, when we expanded the process, the issue reaperead:
+:::
 
 ::: {style="text-align: center;"}
 <img src="images/NA table.png" width="200%"/>
@@ -253,7 +204,9 @@ While at first, it seemed to work correctly, when we expanded the process to 50 
 
 ## Final solution
 
-For each category, we selected the 15 products with the highest quantity available while also ensuring that they were from before 2020.
+::: {style="font-size: 35px;"}
+For each category, we selected the 15 products with the highest quantity of pieces available while also ensuring that they were from before 2020.
+:::
 
 ```{r, eval = FALSE, echo = TRUE}
 pieces_category <- all_products |> 
@@ -265,7 +218,11 @@ pieces_category <- all_products |>
 
 ------------------------------------------------------------------------
 
-Once we have the 15 products we applied the function to each category selected with the help of a VPN. In order to get the 15 products of each category we had to change the country each time we execute the code
+## Final solution
+
+::: {style="font-size: 35px;"}
+Once we had the 15 products we applied the function to each category selected with the help of a VPN. 
+:::
 
 ```{r, eval = FALSE, echo = TRUE}
 # Harry Potter: Rome, Italy
@@ -327,18 +284,6 @@ products7 <- products_sh |>
 
 ------------------------------------------------------------------------
 
-Finally we merge everything into one single dataset
-
-```{r, eval = FALSE, echo = TRUE}
-final_products <- bind_rows(products1, products2, products3, products4, 
-                         products5, products6, products7)
-
-final_products <- final_products |> 
-  clean_names()
-```
-
-------------------------------------------------------------------------
-
 ## Final output
 
 ::: {style="text-align: center;"}
@@ -356,7 +301,7 @@ kable(brick[1:10, ]) |>
 
 ##  {.center .large}
 
-# Data visualizations
+# DATA VISUALIZATIONS
 
 ```{r, echo=FALSE}
 # Pre-processing
@@ -554,8 +499,10 @@ p5
 
 ------------------------------------------------------------------------
 
-::: {style="display: flex; justify-content: center; align-items: center; height: 120vh"}
-<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" width="900" height="450" style="border: none;">
+## Interactive Plot
+
+::: {style="display: flex; justify-content: center; align-items: center; height: 110vh"}
+<iframe src="https://ireneandpablo.shinyapps.io/shiny_app/" width="1000" height="500" style="border: none;">
 
 </iframe>
 :::
